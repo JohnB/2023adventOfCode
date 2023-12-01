@@ -1,0 +1,151 @@
+<!-- vim: syntax=markdown -->
+
+# Day 20
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+
+IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+alias AdventOfCode, as: AOC
+alias Kino.Input
+
+# Note: when making the next template, something like this works well:
+#   `cat day04.livemd | sed 's/03/04/' > day04.livemd`
+#
+```
+
+## Installation and Data
+
+```elixir
+input_p1example = Kino.Input.textarea("Example Data")
+```
+
+### Day 20: Grove Positioning System
+
+It's finally time to meet back up with the Elves. When you try to contact them, however, you get no reply. Perhaps you're out of range?
+
+You know they're headed to the grove where the star fruit grows, so if you can figure out where that is, you should be able to meet back up with them.
+
+Fortunately, your handheld device has a file (your puzzle input) that contains the grove's coordinates! Unfortunately, the file is encrypted - just in case the device were to fall into the wrong hands.
+
+Maybe you can decrypt it?
+
+When you were still back at the camp, you overheard some Elves talking about coordinate file encryption. The main operation involved in decrypting the file is called mixing.
+
+The encrypted file is a list of numbers. To mix the file, move each number forward or backward in the file a number of positions equal to the value of the number being moved. The list is circular, so moving a number off one end of the list wraps back around to the other end as if the ends were connected.
+
+For example, to move the 1 in a sequence like 4, 5, 6, 1, 7, 8, 9, the 1 moves one position forward: 4, 5, 6, 7, 1, 8, 9. To move the -2 in a sequence like 4, -2, 5, 6, 7, 8, 9, the -2 moves two positions backward, wrapping around: 4, 5, 6, 7, 8, -2, 9.
+
+The numbers should be moved in the order they originally appear in the encrypted file. Numbers moving around during the mixing process do not change the order in which the numbers are moved.
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input_p1puzzleInput = Kino.Input.textarea("Puzzle Input")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input_source_select =
+  Kino.Input.select("Source", [{:example, "example"}, {:puzzle_input, "puzzle input"}])
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+p1data = fn ->
+  (Kino.Input.read(input_source_select) == :example &&
+     Kino.Input.read(input_p1example)) ||
+    Kino.Input.read(input_p1puzzleInput)
+end
+```
+
+## Part 1
+
+###
+
+<!-- livebook:{"break_markdown":true} -->
+
+###
+
+```elixir
+defmodule Day20 do
+  @special_indexes [1000, 2000, 3000]
+
+  def find_grove_coordinates(list) do
+    zero_position = Enum.find_index(list, fn x -> x == 0 end)
+
+    Enum.map(@special_indexes, fn index ->
+      Enum.at(list, rem(index + zero_position, Enum.count(list)))
+    end)
+    |> IO.inspect(label: "grove_coordinates")
+    |> Enum.sum()
+    |> IO.inspect(label: "sum of grove_coordinates")
+  end
+
+  def solve(text) do
+    original_order = AOC.as_integers(text)
+    encrypted_length = Enum.count(original_order)
+
+    original_order
+    |> IO.inspect(label: "Initial arrangement")
+    |> Enum.reduce(original_order, fn value, new_order ->
+      position = Enum.find_index(new_order, fn x -> x == value end)
+      new_position = position + rem(value, encrypted_length - 1)
+
+      new_position =
+        cond do
+          new_position < 0 -> new_position + encrypted_length
+          new_position > encrypted_length -> new_position - encrypted_length + 1
+          true -> new_position
+        end
+
+      cond do
+        value == 0 -> new_order
+        # new_position == 0 -> Enum.slide(new_order, position, encrypted_length - 1)
+        value < 0 -> Enum.slide(new_order, position, new_position - 1)
+        new_position < position -> Enum.slide(new_order, position, new_position)
+        true -> Enum.slide(new_order, position, new_position)
+      end
+
+      # |> IO.inspect(label: "#{value} moves from #{position} to #{new_position}")
+    end)
+    |> find_grove_coordinates()
+  end
+
+  def solve2(_text) do
+  end
+end
+
+p1data.()
+|> Day20.solve()
+|> IO.inspect(label: "\n*** Part 1 solution (example: 4 + -3 + 2 = 3)")
+
+# 1669
+
+# p1data.()
+# |> Day20.solve2()
+# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
+
+# Initial arrangement:
+# 1, 2, -3, 3, -2, 0, 4
+# 2, 1, -3, 3, -2, 0, 4
+# 1, -3, 2, 3, -2, 0, 4
+# 1, 2, 3, -2, -3, 0, 4
+# 1, 2, -2, -3, 0, 3, 4
+# 1, 2, -3, 0, 3, 4, -2
+# 1, 2, -3, 0, 3, 4, -2
+# 1, 2, -3, 4, 0, 3, -2
+#
+# 4 + -3 + 2 = 3
+# [-1401, 7682, 8328] 14609 (is too high)
+# [-1401, -2505, -3490] -7396 (not the right answer)
+# Someone on reddit points out: you should assume you're *out* of the rotation
+# before you wrap multiple times over the list (like with a big number).
+# 2127 (too low)
+```
+
+### Part Two

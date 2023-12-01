@@ -1,0 +1,180 @@
+<!-- vim: syntax=markdown -->
+
+# Day 23
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+
+IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+alias AdventOfCode, as: AOC
+alias Kino.Input
+
+# Note: when making the next template, something like this works well:
+#   `cat day04.livemd | sed 's/03/04/' > day04.livemd`
+#
+```
+
+## Installation and Data
+
+```elixir
+input_p1example = Kino.Input.textarea("Example Data")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input_p1puzzleInput = Kino.Input.textarea("Puzzle Input")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input_source_select =
+  Kino.Input.select("Source", [{:example, "example"}, {:puzzle_input, "puzzle input"}])
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+p1data = fn ->
+  (Kino.Input.read(input_source_select) == :example &&
+     Kino.Input.read(input_p1example)) ||
+    Kino.Input.read(input_p1puzzleInput)
+end
+```
+
+## Part 1
+
+### Day 23: Unstable Diffusion
+
+You enter a large crater of gray dirt where the grove is supposed to be. All around you, plants you imagine were expected to be full of fruit are instead withered and broken. A large group of Elves has formed in the middle of the grove.
+
+"...but this volcano has been dormant for months. Without ash, the fruit can't grow!"
+
+You look up to see a massive, snow-capped mountain towering above you.
+
+"It's not like there are other active volcanoes here; we've looked everywhere."
+
+"But our scanners show active magma flows; clearly it's going somewhere."
+
+They finally notice you at the edge of the grove, your pack almost overflowing from the random star fruit you've been collecting. Behind you, elephants and monkeys explore the grove, looking concerned. Then, the Elves recognize the ash cloud slowly spreading above your recent detour.
+
+"Why do you--" "How is--" "Did you just--"
+
+Before any of them can form a complete question, another Elf speaks up: "Okay, new plan. We have almost enough fruit already, and ash from the plume should spread here eventually. If we quickly plant new seedlings now, we can still make it to the extraction point. Spread out!"
+
+The Elves each reach into their pack and pull out a tiny plant. The plants rely on important nutrients from the ash, so they can't be planted too close together.
+
+There isn't enough time to let the Elves figure out where to plant the seedlings themselves; you quickly scan the grove (your puzzle input) and note their positions.
+
+For example:
+
+```
+....#..
+..###.#
+#...#.#
+.#...##
+#.###..
+##.#.##
+.#..#..
+```
+
+The scan shows Elves # and empty ground .; outside your scan, more empty ground extends a long way in every direction. The scan is oriented so that north is up; orthogonal directions are written N (north), S (south), W (west), and E (east), while diagonal directions are written NE, NW, SE, SW.
+
+The Elves follow a time-consuming process to figure out where they should each go; you can speed up this process considerably. The process consists of some number of rounds during which Elves alternate between considering where to move and actually moving.
+
+During the first half of each round, each Elf considers the eight positions adjacent to themself. If no other Elves are in one of those eight positions, the Elf does not do anything during this round. Otherwise, the Elf looks in each of four directions in the following order and proposes moving one step in the first valid direction:
+
+* If there is no Elf in the N, NE, or NW adjacent positions, the Elf proposes moving north one step.
+* If there is no Elf in the S, SE, or SW adjacent positions, the Elf proposes moving south one step.
+* If there is no Elf in the W, NW, or SW adjacent positions, the Elf proposes moving west one step.
+* If there is no Elf in the E, NE, or SE adjacent positions, the Elf proposes moving east one step.
+
+After each Elf has had a chance to propose a move, the second half of the round can begin. Simultaneously, each Elf moves to their proposed destination tile if they were the only Elf to propose moving to that position. If two or more Elves propose moving to the same position, none of those Elves move.
+
+Finally, at the end of the round, the first direction the Elves considered is moved to the end of the list of directions. For example, during the second round, the Elves would try proposing a move to the south first, then west, then east, then north. On the third round, the Elves would first consider west, then east, then north, then south.
+...
+
+<!-- livebook:{"break_markdown":true} -->
+
+###
+
+<!-- livebook:{"break_markdown":true} -->
+
+###
+
+```elixir
+defmodule Day23 do
+  @elf "#"
+  @empty_ground "."
+  @ten_round_dirs ~w(N S W E N S W E N S)
+  @scan_dirs %{
+    "N" => ~w(N S W E),
+    "S" => ~w(S W E N),
+    "W" => ~w(W E N S),
+    "E" => ~w(E N S W)
+  }
+
+  def elf_indexes(grid) do
+    grid
+    |> Enum.filter(fn {_index, value} -> value == @elf end)
+    |> Map.keys()
+  end
+
+  def possible_moves(grid, dir) do
+    Enum.map(elf_indexes(grid), %{}, fn elf, acc ->
+      sides = %{
+        "N" => [elf - grid.grid_width - 1, elf - grid.grid_width, elf - grid.grid_width + 1],
+        "S" => [elf + grid.grid_width - 1, elf + grid.grid_width, elf + grid.grid_width + 1],
+        "W" => [elf - grid.grid_width - 1, elf - 1, elf + grid.grid_width - 1],
+        "E" => [elf - grid.grid_width + 1, elf + 1, elf + grid.grid_width + 1]
+      }
+
+      empties = Enum.filter(sides, fn [a, b, c] -> is_nil(grid[a]) end)
+    end)
+  end
+
+  def remove_conflicts(destination_map) do
+  end
+
+  def move_elves(grid, destination_map) do
+  end
+
+  def solve(text) do
+    original_grid =
+      AOC.as_grid(text, 1000)
+      |> Enum.reject(fn {_k, v} -> v == @empty_ground end)
+
+    # Run ten rounds
+    grid10 =
+      Enum.reduce(@ten_round_dirs, original_grid, fn dir, grid ->
+        grid
+        |> possible_moves(dir)
+        |> remove_conflicts()
+        |> move(grid)
+      end)
+
+    # Find extents
+    # Subtract elf count from w*h
+  end
+
+  def solve2(_text) do
+  end
+end
+
+p1data.()
+|> Day23.solve()
+|> IO.inspect(label: "\n*** Part 1 solution (example: 110)")
+
+# 
+
+# p1data.()
+# |> Day23.solve2()
+# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
+
+#
+```
+
+### Part Two

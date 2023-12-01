@@ -1,0 +1,216 @@
+<!-- vim: syntax=markdown -->
+
+# Day 07
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+
+IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+alias AdventOfCode, as: AOC
+alias Kino.Input
+
+# Note: when making the next template, something like this works well:
+#   `cat day04.livemd | sed 's/03/04/' > day04.livemd`
+#
+```
+
+## Installation and Data
+
+```elixir
+input_p1example = Kino.Input.textarea("Example Data")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input_p1puzzleInput = Kino.Input.textarea("Puzzle Input")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input_source_select =
+  Kino.Input.select("Source", [{:example, "example"}, {:puzzle_input, "puzzle input"}])
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+p1data = fn ->
+  (Kino.Input.read(input_source_select) == :example &&
+     Kino.Input.read(input_p1example)) ||
+    Kino.Input.read(input_p1puzzleInput)
+end
+```
+
+## Part 1
+
+### No Space Left On Device
+
+To clean up the disk you need to convert a directory traversal 
+(see puzzle input)
+into a complete tree structure and calculate the dir sizes.
+
+```
+- / (dir)
+  - a (dir)
+    - e (dir)
+      - i (file, size=584)
+    - f (file, size=29116)
+    - g (file, size=2557)
+    - h.lst (file, size=62596)
+  - b.txt (file, size=14848514)
+  - c.dat (file, size=8504156)
+  - d (dir)
+    - j (file, size=4060174)
+    - d.log (file, size=8033020)
+    - d.ext (file, size=5626152)
+    - k (file, size=7214296)
+```
+
+and then finding all the dirs under 100k in size.
+
+<!-- livebook:{"break_markdown":true} -->
+
+###
+
+```elixir
+moduledoc = """
+$ cd /
+$ ls
+dir a
+14848514 b.txt
+8504156 c.dat
+dir d
+$ cd a
+$ ls
+dir e
+29116 f
+2557 g
+62596 h.lst
+$ cd e
+$ ls
+584 i
+$ cd ..
+$ cd ..
+$ cd d
+$ ls
+4060174 j
+8033020 d.log
+5626152 d.ext
+7214296 k
+
+"""
+
+defmodule Day07 do
+  def execute("$ cd /" = _line, %{}) do
+    # Required to be the first command, starting at the root,
+    %{dirs: %{"/" => %{}}, path: ["/"]}
+  end
+
+  def execute("$ cd /" = _line, tree) do
+    %{tree | path: ["/"]}
+  end
+
+  def execute("$ cd .." = _line, %{path: [_pwd | parents]} = tree) do
+    %{tree | path: parents}
+  end
+
+  def execute("$ cd " <> dir_name = _line, %{path: path} = tree) do
+    %{tree | path: [dir_name | path]}
+  end
+
+  def execute("$ ls" = _line, tree), do: tree
+
+  def execute("dir " <> dir_name = _line, %{dirs: dirs, path: path} = tree) do
+    %{tree | dirs: put_in(dirs, Enum.reverse([dir_name | path]), %{})}
+  end
+
+  def execute(size_and_filename, %{dirs: dirs, path: path} = tree) do
+    [size, filename] = String.split(size_and_filename, " ", trim: true)
+    size = String.to_integer(size)
+
+    %{tree | dirs: put_in(dirs, Enum.reverse([filename | path]), size)}
+  end
+
+  def commands_to_tree(commands) do
+    commands
+    |> Enum.reduce(%{}, &execute/2)
+  end
+
+  def calc_dir_sizes(dir_tree, summary \\ %{}, path \\ []) do
+    summary = put_in(summary, [path], 0)
+    # IO.inspect([dir_tree, summary, path], label: "\ncalc_dir_sizes")
+    dir_tree
+    |> Enum.reduce(summary, fn {name, value}, acc ->
+      if is_integer(value) do
+        get_and_update_in(acc, [path], &{&1, &1 + value}) |> elem(1)
+      else
+        updated_summary = calc_dir_sizes(value, acc, [name | path])
+
+        get_and_update_in(updated_summary, [path], &{&1, &1 + updated_summary[[name | path]]})
+        |> elem(1)
+      end
+    end)
+  end
+
+  def just_sizes(text) do
+    tree =
+      text
+      |> AOC.as_single_lines()
+      |> commands_to_tree()
+
+    # |> IO.inspect()
+
+    calc_dir_sizes(tree.dirs)
+    |> Enum.map(fn {k, v} -> {Enum.join(Enum.reverse(k), "/"), v} end)
+    |> Enum.map(fn {_k, v} -> v end)
+  end
+
+  def solve(text) do
+    just_sizes(text)
+    |> Enum.reject(fn v -> v >= 100_000 end)
+    |> Enum.sum()
+  end
+
+  def solve2(text) do
+    IO.inspect("???", label: 113)
+    total_space = 70_000_000
+    required_space = 30_000_000
+
+    sizes =
+      just_sizes(text)
+      |> Enum.sort()
+
+    used_space = Enum.max(sizes)
+    unused_space = total_space - used_space
+    minimum_deletion = required_space - unused_space
+
+    IO.inspect([total_space, required_space, used_space, unused_space, minimum_deletion],
+      label: 101
+    )
+
+    sizes
+    |> IO.inspect(label: 103)
+    |> Enum.reject(fn x -> x < minimum_deletion end)
+    |> IO.inspect(label: 105)
+    |> Enum.min()
+  end
+end
+
+p1data.()
+|> Day07.solve()
+|> IO.inspect(label: "\n*** Part 1 solution (example: 95437)")
+
+# 1084134
+
+p1data.()
+|> Day07.solve2()
+|> IO.inspect(label: "\n*** Part 2 solution (example: 24933642)")
+
+# 6183184
+```
+
+### Part Two

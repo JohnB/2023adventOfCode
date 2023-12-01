@@ -1,0 +1,90 @@
+<!-- vim: syntax=markdown -->
+
+# Day 17
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"}
+])
+
+IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+alias AdventOfCode, as: AOC
+alias Kino.Input
+
+# Note: when making the next template, something like this works well:
+#   `cat day04.livemd | sed 's/03/04/' > day04.livemd`
+#
+```
+
+## Installation and Data
+
+```elixir
+input_p1example = Kino.Input.textarea("Example Data")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input_p1puzzleInput = Kino.Input.textarea("Puzzle Input")
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input_source_select =
+  Kino.Input.select("Source", [{:example, "example"}, {:puzzle_input, "puzzle input"}])
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+p1data = fn ->
+  (Kino.Input.read(input_source_select) == :example &&
+     Kino.Input.read(input_p1example)) ||
+    Kino.Input.read(input_p1puzzleInput)
+end
+```
+
+## Part 1
+
+###
+
+<!-- livebook:{"break_markdown":true} -->
+
+###
+
+```elixir
+defmodule Day17 do
+  # Assume a 4x4 grid for the rocks
+  @rocks [
+    %{width: 4, cells: [0, 1, 2, 3]},
+    %{width: 4, cells: [1, 4, 5, 6, 9]},
+    %{width: 4, cells: [2, 6, 8, 9, 10]},
+    %{width: 4, cells: [0, 4, 8, 12]},
+    %{width: 4, cells: [0, 1, 4, 5]}
+  ]
+  def solve(text) do
+    current_floor_heigts = [0, 0, 0, 0, 0, 0, 0]
+
+    text
+    |> AOC.as_single_lines()
+  end
+
+  def solve2(_text) do
+  end
+end
+
+p1data.()
+|> Day17.solve()
+|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+
+# 1669
+
+# p1data.()
+# |> Day17.solve2()
+# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
+
+#
+```
+
+### Part Two
