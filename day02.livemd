@@ -55,24 +55,94 @@ end
 
 ```elixir
 defmodule Day02 do
+  @valid_part1 %{red: 12, green: 13, blue: 14}
+  @reveal %{red: 0, green: 0, blue: 0}
+
+  def parse_games(lines) do
+    lines
+    |> Enum.reduce(%{}, fn line, acc ->
+      [game_num, reveals] = String.split(line, ": ")
+      game_num = String.to_integer(String.slice(game_num, 5..-1))
+
+      reveals =
+        reveals
+        |> String.split("; ")
+        |> Enum.map(fn round ->
+          round
+          |> String.split(", ")
+          |> Enum.reduce(@reveal, fn color_count, acc1 ->
+            [count, color] = String.split(color_count, " ")
+            count = String.to_integer(count)
+            color = String.to_existing_atom(color)
+
+            %{acc1 | color => acc1[color] + count}
+          end)
+        end)
+
+      Map.put_new(acc, game_num, reveals)
+    end)
+  end
+
+  def calculate_minimal_counts(map) do
+    map
+    |> Enum.reduce(%{}, fn {game_num, reveals}, acc ->
+      minimal_counts =
+        Enum.reduce(reveals, @reveal, fn reveal, acc1 ->
+          Enum.reduce(reveal, acc1, fn {color, count}, acc2 ->
+            %{acc2 | color => max(acc2[color], count)}
+          end)
+        end)
+
+      Map.put_new(acc, game_num, minimal_counts)
+    end)
+  end
+
+  def select_valid_games(all_counts, minimal_counts) do
+    Enum.filter(all_counts, fn {_game_num, counts} ->
+      Enum.all?(counts, fn {color, count} ->
+        count <= minimal_counts[color]
+      end)
+    end)
+  end
+
+  def sum_ids(all_counts) do
+    all_counts
+    |> Enum.map(fn {game_num, _} -> game_num end)
+    |> Enum.sum()
+  end
+
   def solve(text) do
     text
+    |> AOC.as_single_lines()
+    |> parse_games()
+    |> calculate_minimal_counts()
+    |> select_valid_games(@valid_part1)
+    |> sum_ids()
+  end
+
+  def calculate_power(%{red: red, green: green, blue: blue}) do
+    red * green * blue
   end
 
   def solve2(text) do
     text
+    |> AOC.as_single_lines()
+    |> parse_games()
+    |> calculate_minimal_counts()
+    |> Enum.map(fn {_game_num, cubes} -> calculate_power(cubes) end)
+    |> Enum.sum()
   end
 end
 
 p1data.()
 |> Day02.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 8)")
 
-# 
+# 1931
 
 p1data.()
 |> Day02.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 2286)")
 
-# 
+# 83105
 ```
