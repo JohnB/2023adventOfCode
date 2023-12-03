@@ -49,57 +49,125 @@ end
 
 ```elixir
 defmodule Day03 do
-  def solve(text) do
-    text
-    # |> AOC.as_single_lines()
-    # |> Enum.map(fn line ->
-    #   half = div(String.length(line), 2)
+  @island %{cells: [], part_number: 0, perimeter: []}
+  @non_symbols [".", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", nil]
+  @gear "*"
 
-    #   left = half_set(line, 0..(half - 1))
-    #   right = half_set(line, half..(2 * half + 1))
-    #   MapSet.intersection(left, right)
-    # end)
-    # |> Enum.map(fn mapset ->
-    #   mapset
-    #   |> MapSet.to_list()
-    #   |> hd
-    #   |> char_score()
-    # end)
-    # |> Enum.sum()
+  def no_adjacent_symbols?(island, grid) do
+    island.perimeter
+    |> Enum.all?(fn cell -> grid[cell] in @non_symbols end)
+  end
+
+  def find_numeric_islands(grid) do
+    width = grid.grid_width
+
+    all =
+      0..grid.last_cell
+      |> Enum.reduce(
+        %{islands: [], in_progress: @island},
+        fn cell,
+           %{
+             islands: islands,
+             in_progress:
+               %{cells: cells, part_number: part_number, perimeter: perimeter} = in_progress
+           } = acc ->
+          case {grid[cell] =~ ~r/\d/, part_number} do
+            # assume no parts start with a 0
+            {true, 0} ->
+              %{
+                acc
+                | in_progress: %{
+                    cells: [cell | cells],
+                    part_number: String.to_integer(grid[cell]),
+                    perimeter: [
+                      cell - 1 - width,
+                      cell - width,
+                      cell - 1,
+                      cell - 1 + width,
+                      cell + width
+                    ]
+                  }
+              }
+
+            {true, n} ->
+              %{
+                acc
+                | in_progress: %{
+                    cells: [cell | cells],
+                    part_number: 10 * n + String.to_integer(grid[cell]),
+                    perimeter: [cell - width, cell + width | perimeter]
+                  }
+              }
+
+            {false, 0} ->
+              acc
+
+            {false, _n} ->
+              %{
+                islands: [
+                  %{in_progress | perimeter: [cell - width, cell, cell + width | perimeter]}
+                  | islands
+                ],
+                in_progress: @island
+              }
+          end
+        end
+      )
+
+    all[:islands]
+  end
+
+  def solve(text) do
+    grid = AOC.as_grid(text)
+
+    find_numeric_islands(grid)
+    |> Enum.reject(fn island -> no_adjacent_symbols?(island, grid) end)
+    |> Enum.map(fn %{part_number: part_number} -> part_number end)
+    |> Enum.sum()
+  end
+
+  def find_gear_ratios(islands, grid) do
+    0..grid.last_cell
+    |> Enum.reduce([], fn cell, acc ->
+      if grid[cell] == @gear do
+        neighbors = AOC.neighbors8(grid, cell) |> MapSet.new()
+
+        overlaps =
+          Enum.filter(islands, fn island ->
+            MapSet.intersection(neighbors, MapSet.new(island.cells))
+            |> Enum.any?()
+          end)
+
+        if Enum.count(overlaps) == 2 do
+          [List.first(overlaps).part_number * List.last(overlaps).part_number | acc]
+        else
+          acc
+        end
+      else
+        acc
+      end
+    end)
+    |> Enum.uniq()
   end
 
   def solve2(text) do
-    text
-    # |> AOC.as_single_lines()
-    # |> Enum.chunk_every(3)
-    # |> Enum.map(fn group ->
-    #   [elf1, elf2, elf3] =
-    #     group
-    #     |> Enum.map(fn rucksack ->
-    #       rucksack
-    #       |> String.split("", trim: true)
-    #       |> MapSet.new()
-    #     end)
+    grid = AOC.as_grid(text)
+    islands = find_numeric_islands(grid)
 
-    #   MapSet.intersection(elf1, elf2)
-    #   |> MapSet.intersection(elf3)
-    #   |> MapSet.to_list()
-    #   |> hd
-    #   |> char_score()
-    # end)
-    # |> Enum.sum()
+    find_gear_ratios(islands, grid)
+    |> Enum.sum()
   end
 end
 
 p1data.()
 |> Day03.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 4361)")
 
-# 
+# 533784
 
 p1data.()
 |> Day03.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 467835)")
 
-# 
+# 78826761
 ```
