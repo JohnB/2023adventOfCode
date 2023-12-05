@@ -49,8 +49,57 @@ end
 
 ```elixir
 defmodule Day05 do
+  def make_ranges(lines) do
+    lines
+    |> Enum.reduce([], fn line, acc ->
+      [dest_start, src_start, len] =
+        String.split(line, ~r/\W/, trim: true)
+        |> Enum.map(&String.to_integer/1)
+
+      [%{src: Range.new(src_start, src_start + len - 1), dest: dest_start, len: len} | acc]
+    end)
+    |> Enum.reverse()
+  end
+
+  def translate(seed, mappings, which_map) do
+    map_list = mappings["#{which_map} map:"]
+    # |> IO.inspect()
+    case Enum.find(map_list, fn item ->
+           seed in item.src
+         end) do
+      nil -> seed
+      item -> seed - item.src.first + item.dest
+    end
+  end
+
   def solve(text) do
-    String.length(text)
+    [seeds | mappings] = AOC.as_doublespaced_paragraphs(text)
+    # IO.inspect(seeds)
+    seeds =
+      String.split(seeds, ~r/\W/, trim: true)
+      |> Enum.slice(1..-1)
+      |> Enum.map(&String.to_integer/1)
+
+    mappings =
+      mappings
+      |> Enum.reduce(%{}, fn mapping, acc ->
+        [name | maps] = String.split(mapping, "\n", trim: true)
+        Map.put_new(acc, name, make_ranges(maps))
+      end)
+
+    seeds
+    |> Enum.map(fn seed ->
+      seed
+      |> translate(mappings, "seed-to-soil")
+      |> translate(mappings, "soil-to-fertilizer")
+      |> translate(mappings, "fertilizer-to-water")
+      |> translate(mappings, "water-to-light")
+      |> translate(mappings, "light-to-temperature")
+      |> translate(mappings, "temperature-to-humidity")
+      |> translate(mappings, "humidity-to-location")
+    end)
+    |> Enum.sort()
+    |> List.first()
   end
 
   def solve2(text) do
@@ -60,9 +109,9 @@ end
 
 p1data.()
 |> Day05.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 35)")
 
-#
+# 389056265
 
 p1data.()
 |> Day05.solve2()
