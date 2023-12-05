@@ -51,28 +51,97 @@ end
 
 ```elixir
 defmodule Day04 do
+  def parse_cards(text) do
+    text
+    |> AOC.as_single_lines()
+    |> Enum.reduce(%{}, fn line, acc ->
+      [card_num, sets] = String.split(line, ": ")
+
+      card_num =
+        card_num
+        |> String.replace(~r/^Card\W+/, "")
+        |> String.to_integer()
+
+      [winning_numbers, your_numbers] = String.split(sets, " | ")
+
+      [winning_numbers, your_numbers] =
+        [winning_numbers, your_numbers]
+        |> Enum.map(fn set ->
+          set
+          |> String.split(~r/\D+/, trim: true)
+          |> Enum.map(fn str -> str |> String.to_integer() end)
+          |> MapSet.new()
+        end)
+
+      num_matches =
+        MapSet.intersection(winning_numbers, your_numbers)
+        |> Enum.count()
+
+      Map.put(acc, card_num, %{
+        winning_numbers: winning_numbers,
+        your_numbers: your_numbers,
+        num_matches: num_matches,
+        count: 1
+      })
+    end)
+  end
+
   def solve(text) do
     text
-    # |> AOC.as_single_lines()
+    |> parse_cards()
+    |> Enum.map(fn {_k, %{num_matches: num_matches}} ->
+      case num_matches do
+        0 -> 0
+        n -> 2 ** (n - 1)
+      end
+    end)
+    |> Enum.sum()
   end
 
   def solve2(text) do
-    text
-    # |> AOC.as_single_lines()
+    cards = parse_cards(text)
+
+    ids =
+      cards
+      |> Map.keys()
+      |> Enum.sort()
+
+    # The algorithm only works when the IDs are sequential,
+    # so make sure they are:
+    1 = List.first(ids)
+    if List.last(ids) != Enum.count(ids), do: raise("IDs must be 1..N")
+
+    Enum.reduce(ids, cards, fn id, acc ->
+      # IO.inspect(acc)
+      case acc[id].num_matches do
+        0 ->
+          acc
+
+        n ->
+          Enum.reduce(1..n, acc, fn delta, acc1 ->
+            next_index = id + delta
+
+            Map.update!(acc1, next_index, fn %{count: count} = value ->
+              %{value | count: acc[id].count + count}
+            end)
+          end)
+      end
+    end)
+    |> Enum.reduce(0, fn {_key, %{count: count}}, total -> total + count end)
   end
 end
 
 p1data.()
 |> Day04.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: 2)")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 13)")
 
-# 528
+# 26914
 
 p1data.()
 |> Day04.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: 4)")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 30)")
 
-# 881
+# 13080971
 ```
 
 ### Part Two

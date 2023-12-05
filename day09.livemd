@@ -47,173 +47,26 @@ end
 
 ## Part 1
 
-### Rope Bridge
-
-This rope bridge creaks as you walk along it. You aren't sure how old it is, or whether it can even support your weight.
-
-It seems to support the Elves just fine, though. The bridge spans a gorge which was carved out by the massive river far below you.
-
-You step carefully; as you do, the ropes stretch and twist. You decide to distract yourself by modeling rope physics; maybe you can even figure out where not to step.
-
-Consider a rope with a knot at each end; these knots mark the head and the tail of the rope. If the head moves far enough away from the tail, the tail is pulled toward the head.
-
-Due to nebulous reasoning involving Planck lengths, you should be able to model the positions of the knots on a two-dimensional grid. Then, by following a hypothetical series of motions (your puzzle input) for the head, you can determine how the tail will move.
-
-Due to the aforementioned Planck lengths, the rope must be quite short; in fact, the head (H) and tail (T) must always be touching (diagonally adjacent and even overlapping both count as touching):
-
-<!-- livebook:{"break_markdown":true} -->
-
-###
-
 ```elixir
 defmodule Day09 do
-  # conceptual board is 1000x1000, and we start at 500x500
-  # track the head position and tail position, adding the
-  # tail position to a MapSet every time it moves, then
-  # count the number of positions.
   def solve(text) do
-    center = 500 * 500
-    deltas = %{"U" => -1000, "D" => 1000, "L" => -1, "R" => 1}
-
-    rope =
-      text
-      |> AOC.as_single_lines()
-      |> Enum.reduce(%{h: center, t: center, set: MapSet.new([center])}, fn line, acc ->
-        [direction, distance] = String.split(line, " ")
-        delta = deltas[direction]
-        distance = String.to_integer(distance)
-
-        # IO.inspect([acc, delta, distance], label: "\nline: #{line}")
-        move(acc, delta, distance)
-      end)
-
-    Enum.count(rope.set)
-  end
-
-  def move(map, _delta, 0), do: map
-
-  def move(%{h: h, t: t, set: set} = _map, delta, distance) when delta in [1, -1] do
-    # IO.inspect(map)
-    h2 = h + delta
-    new_dist = abs(h2 - t)
-
-    cond do
-      new_dist == 2 ->
-        move(%{h: h2, t: h, set: MapSet.put(set, h)}, delta, distance - 1)
-
-      new_dist < 2 ->
-        move(%{h: h2, t: t, set: set}, delta, distance - 1)
-
-      new_dist > 1001 || new_dist < 999 ->
-        move(%{h: h2, t: h, set: MapSet.put(set, h)}, delta, distance - 1)
-
-      true ->
-        move(%{h: h2, t: t, set: set}, delta, distance - 1)
-    end
-  end
-
-  def move(%{h: h, t: t, set: set} = _map, delta, distance) do
-    # IO.inspect(map)
-    h2 = h + delta
-    new_dist = abs(h2 - t)
-
-    cond do
-      new_dist == 2 ->
-        move(%{h: h2, t: h, set: MapSet.put(set, h)}, delta, distance - 1)
-
-      new_dist < 2 ->
-        move(%{h: h2, t: t, set: set}, delta, distance - 1)
-
-      new_dist > 1001 || new_dist < 999 ->
-        move(%{h: h2, t: h, set: MapSet.put(set, h)}, delta, distance - 1)
-
-      true ->
-        move(%{h: h2, t: t, set: set}, delta, distance - 1)
-    end
+    String.length(text)
   end
 
   def solve2(text) do
-    center = 5000 * 5000
-    deltas = %{"U" => -1000, "D" => 1000, "L" => -1, "R" => 1}
-    rope = [center, center, center, center, center, center, center, center, center, center]
-
-    rope =
-      text
-      |> AOC.as_single_lines()
-      |> Enum.reduce(%{rope: rope, set: MapSet.new([center])}, fn line, acc ->
-        [direction, distance] = String.split(line, " ")
-        delta = deltas[direction]
-        distance = String.to_integer(distance)
-
-        # IO.puts(line)
-        move2(acc, delta, distance)
-      end)
-
-    Enum.count(rope.set)
-  end
-
-  def nearby(), do: [-1001, -1000, -999, -1, 0, 1, 999, 1000, 1001]
-  def two_away(), do: [-2002, -2000, -1998, -2, 2, 1998, 2000, 2002]
-  def knights(), do: [-2001, -1999, -1002, -998, 998, 1002, 1999, 2001]
-
-  def knight_fix() do
-    # what we add when they're a knight's move away
-    %{
-      -2001 => -1001,
-      -1999 => -999,
-      -1002 => -1001,
-      -998 => -999,
-      998 => 999,
-      1002 => 1001,
-      1999 => 999,
-      2001 => 1001
-    }
-  end
-
-  def keep_together([head, tail]) do
-    dist = head - tail
-    # IO.inspect([head, tail, dist])
-    cond do
-      dist in nearby() ->
-        [head, tail]
-
-      dist in two_away() ->
-        [head, div(tail + head, 2)]
-
-      dist in knights() ->
-        [head, tail + knight_fix()[dist]]
-        # true ->
-        #   IO.inspect([head, tail, dist])
-    end
-  end
-
-  def keep_together([head, next | knots] = _list) do
-    [head, next] = keep_together([head, next])
-    # |> IO.inspect()
-    [head | keep_together([next | knots])]
-  end
-
-  def move2(map, delta, distance) do
-    Enum.reduce(1..distance, map, fn _dist, %{rope: [head | knots], set: set} = _acc ->
-      # IO.inspect(acc, label: "delta #{delta}")
-      h2 = head + delta
-      rope = keep_together([h2 | knots])
-      %{rope: rope, set: MapSet.put(set, List.last(rope))}
-    end)
+    String.length(text)
   end
 end
 
 p1data.()
 |> Day09.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: 13)")
+|> IO.inspect(label: "\n*** Part 1 solution (example: )")
 
-# 6212
+#
 
 p1data.()
 |> Day09.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: 36)")
+|> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
-# 2522
+#
 ```
-
-### Part Two
