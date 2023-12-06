@@ -72,7 +72,7 @@ defmodule Day05 do
     end
   end
 
-  def solve(text) do
+  def parse_raw_seeds_and_mappings(text) do
     [seeds | mappings] = AOC.as_doublespaced_paragraphs(text)
     # IO.inspect(seeds)
     seeds =
@@ -87,6 +87,12 @@ defmodule Day05 do
         Map.put_new(acc, name, make_ranges(maps))
       end)
 
+    [seeds, mappings]
+  end
+
+  def solve(text) do
+    [seeds, mappings] = parse_raw_seeds_and_mappings(text)
+
     seeds
     |> Enum.map(fn seed ->
       seed
@@ -98,12 +104,80 @@ defmodule Day05 do
       |> translate(mappings, "temperature-to-humidity")
       |> translate(mappings, "humidity-to-location")
     end)
-    |> Enum.sort()
-    |> List.first()
+    |> Enum.min()
+  end
+
+  def split_and_map(range, mapping_list) do
+    # assume only one mapping will match
+    mapping_list
+    |> Enum.reduce_while(range, fn mapping, acc ->
+      # pre-create what we need, whether we use it or not
+      delta = mapping.dest - mapping.src.first
+      mapit = fn r -> Range.new(r.first + delta, r.last + delta) end
+      left = Range.new(range.first, mapping.src.first - 1)
+      right = Range.new(mapping.src.last + 1, range.last)
+
+      remapped =
+        Range.new(
+          max(mapping.src.first, range.first),
+          min(mapping.src.last, range.last)
+        )
+        |> mapit.()
+
+      case {range.first < mapping.src.first, range.last < mapping.src.first,
+            range.first > mapping.src.last, range.last > mapping.src.last} do
+        {true, true, _, _} ->
+          {:cont, acc}
+
+        {_, _, true, _} ->
+          {:cont, acc}
+
+        {true, false, false, true} ->
+          {:halt,
+           [split_and_map(left, mapping_list), remapped, split_and_map(right, mapping_list)]}
+
+        {true, false, false, false} ->
+          {:halt, [split_and_map(left, mapping_list), remapped]}
+
+        {false, false, false, true} ->
+          {:halt, [remapped, split_and_map(right, mapping_list)]}
+
+        {false, false, false, false} ->
+          {:halt, remapped}
+      end
+    end)
+  end
+
+  def translate2(seed_ranges, mappings, which_map) do
+    # IO.puts("\ntranslate2(#{inspect(seed_ranges)},,#{inspect(which_map)})")
+    mapping_list = mappings["#{which_map} map:"]
+
+    seed_ranges
+    |> List.flatten()
+    |> Enum.map(fn seed_range ->
+      seed_range
+      |> split_and_map(mapping_list)
+    end)
   end
 
   def solve2(text) do
-    String.length(text)
+    [seeds, mappings] = parse_raw_seeds_and_mappings(text)
+
+    initial_seed_ranges =
+      Enum.chunk_every(seeds, 2)
+      |> Enum.map(fn [start, len] -> Range.new(start, start + len - 1) end)
+
+    initial_seed_ranges
+    |> translate2(mappings, "seed-to-soil")
+    |> translate2(mappings, "soil-to-fertilizer")
+    |> translate2(mappings, "fertilizer-to-water")
+    |> translate2(mappings, "water-to-light")
+    |> translate2(mappings, "light-to-temperature")
+    |> translate2(mappings, "temperature-to-humidity")
+    |> translate2(mappings, "humidity-to-location")
+    |> List.flatten()
+    |> Enum.map(fn range -> range.first end)
+    |> Enum.min()
   end
 end
 
@@ -115,7 +189,11 @@ p1data.()
 
 p1data.()
 |> Day05.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 46)")
 
-#
+# 137516820
+```
+
+```elixir
+
 ```

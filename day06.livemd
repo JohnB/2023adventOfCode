@@ -50,23 +50,59 @@ end
 ```elixir
 defmodule Day06 do
   def solve(text) do
-    String.length(text)
+    times_and_distances =
+      AOC.as_single_lines(text)
+      |> Enum.map(fn line ->
+        [_title, data] = String.split(line, ":")
+
+        data
+        |> String.split(~r/\W/, trim: true)
+        |> Enum.map(&String.to_integer/1)
+      end)
+      |> Enum.zip()
+
+    times_and_distances
+    |> Enum.reduce(1, fn {time, distance}, acc ->
+      wins =
+        1..time
+        |> Enum.filter(fn n -> n * (time - n) > distance end)
+
+      acc * Enum.count(wins)
+    end)
   end
 
   def solve2(text) do
-    String.length(text)
+    [time, distance] =
+      AOC.as_single_lines(text)
+      |> Enum.map(fn line ->
+        [_title, data] = String.split(line, ":")
+
+        # IO.puts(title)
+        data
+        |> String.replace(~r/\W/, "", trim: true)
+        |> String.to_integer()
+      end)
+
+    # Brute force algorithm.
+    wins =
+      1..time
+      |> Enum.filter(fn n -> n * (time - n) > distance end)
+
+    # |> IO.inspect(label: "winning times")
+    Enum.count(wins)
   end
 end
 
 p1data.()
 |> Day06.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 288)")
 
-#
+# 6 10 12 12 10 6
+# 503424
 
 p1data.()
 |> Day06.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 71503)")
 
-#
+# 32607562
 ```
