@@ -49,46 +49,98 @@ end
 
 ```elixir
 defmodule Day08 do
-  def add_node(<<node::24, " = ", left::24, ", ", right::24>>, acc) do
-    Map.put(acc, node, %{"L" => left, "R" => right})
-  end
+  @moduledoc """
+  NOTE: part 1 example was this, before being overwritten by part 2
+      LLR
 
-  def solve(text) do
+      AAA = (BBB, BBB)
+      BBB = (AAA, ZZZ)
+      ZZZ = (ZZZ, ZZZ)
+  """
+
+  def parse_dirs_and_maps(text) do
     [directions, maps] = AOC.as_doublespaced_paragraphs(text)
     directions = String.split(directions, "", trim: true)
 
     maps =
       maps
       |> AOC.as_single_lines()
-      # << header :: 8, length :: 32, message ::
-      # HGL = (LNC, LQT)
-      |> Enum.reduce(%{}, fn <<node::24, " = (", left::24, ", ", right::24, ")">>, acc ->
+      |> Enum.reduce(%{}, fn <<node::binary-size(3), " = (", left::binary-size(3), ", ",
+                               right::binary-size(3), ")">>,
+                             acc ->
         Map.put(acc, node, %{"L" => left, "R" => right})
       end)
 
+    [directions, maps]
+  end
+
+  def solve(text) do
+    # |> IO.inspect()
+    [directions, maps] = parse_dirs_and_maps(text)
+
     Stream.cycle(directions)
-    |> Enum.reduce_while({4_276_545, 0}, fn dir, {node, steps} ->
+    |> Enum.reduce_while({"AAA", 0}, fn dir, {node, steps} ->
+      # IO.inspect([dir, {node, steps}])
       case node do
-        5_921_370 -> {:halt, steps}
+        "ZZZ" -> {:halt, steps}
         _ -> {:cont, {maps[node][dir], steps + 1}}
       end
     end)
   end
 
   def solve2(text) do
-    String.length(text)
+    # |> IO.inspect()
+    [directions, maps] = parse_dirs_and_maps(text)
+
+    # filter nodes that end with A
+    aaaa =
+      Map.keys(maps)
+      |> Enum.filter(fn key -> key =~ ~r/..A/ end)
+
+    # |> IO.inspect()
+
+    endpoints =
+      Enum.reduce(aaaa, %{}, fn a_node, acc ->
+        original_node = a_node
+
+        {total_steps, last_node} =
+          Stream.cycle(directions)
+          |> Enum.reduce_while({a_node, 0}, fn dir, {node, steps} ->
+            case node =~ ~r/..Z/ do
+              true -> {:halt, {steps, node}}
+              _ -> {:cont, {maps[node][dir], steps + 1}}
+            end
+          end)
+
+        Map.put(acc, original_node, {total_steps, last_node}) |> IO.inspect()
+        # |> IO.inspect()
+      end)
+      |> IO.inspect()
+
+    endpoints
+    |> Enum.reduce(1, fn {_first_node, {steps, _last_node}}, acc -> acc * steps end)
   end
 end
 
-p1data.()
-|> Day08.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: 6)")
+# p1data.()
+# |> Day08.solve()
+# |> IO.inspect(label: "\n*** Part 1 solution (example: 6)")
 
-#
+# 17621
 
 p1data.()
 |> Day08.solve2()
 |> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
-#
+# 20685524831999
+
+# hand-calculated at this point:
+# "AAA" => {17621, "ZZZ"}, 67 x 263
+#   "CPA" => {16043, "JTZ"}, 61 x 263
+#   "PJA" => {20777, "FTZ"}, 79 x 263
+#   "QKA" => {19199, "VCZ"}, 73 x 263
+#   "VLA" => {18673, "GKZ"}, 71 x 263
+#   "VSA" => {12361, "CLZ" 47 x 263
+# 47 * 71 * 73 * 79 * 61 * 67 = 78652185673
+# 78652185673 * 263 = 20685524831999
 ```
