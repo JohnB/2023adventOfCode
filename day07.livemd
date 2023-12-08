@@ -49,24 +49,185 @@ end
 
 ```elixir
 defmodule Day07 do
+  # Plan: sort by text sort 
+  # Enum.sort(~w/b6QQQQ c2KK22 a44444 d8J8Q8 eA2323 f97AJ9 g3K86T/)
+
+  # We can only do this because we know they're pre-sorted
+  # and card-ordering doesn't matter ([no straights])
+  # 5 of a kind
+  def _score([aaa, aaa, aaa, aaa, aaa]), do: "1"
+  # 4 of a kind
+  def _score([aaa, aaa, aaa, aaa, _bb]), do: "2"
+  def _score([_bb, aaa, aaa, aaa, aaa]), do: "2"
+  # full house
+  def _score([aaa, aaa, aaa, bb, bb]), do: "3"
+  def _score([bb, bb, aaa, aaa, aaa]), do: "3"
+  # 3 of a kind
+  def _score([aaa, aaa, aaa, _b, _c]), do: "4"
+  def _score([_b, aaa, aaa, aaa, _c]), do: "4"
+  def _score([_b, _c, aaa, aaa, aaa]), do: "4"
+  # Two Pair
+  def _score([aaa, aaa, bb, bb, _c]), do: "5"
+  def _score([aaa, aaa, _c, bb, bb]), do: "5"
+  def _score([_c, aaa, aaa, bb, bb]), do: "5"
+  # One Pair
+  def _score([aaa, aaa, _b, _c, _d]), do: "6"
+  def _score([_b, aaa, aaa, _c, _d]), do: "6"
+  def _score([_b, _c, aaa, aaa, _d]), do: "6"
+  def _score([_b, _c, _d, aaa, aaa]), do: "6"
+  # High Card?
+  def _score([_a, _b, _c, _d, _e]), do: "7"
+
+  def score(hand) do
+    hand
+    |> String.split("", trim: true)
+    |> Enum.sort()
+    |> _score()
+  end
+
+  def sortable_hand(hand) do
+    hand
+    |> String.replace(~r/A/, "a")
+    |> String.replace(~r/K/, "b")
+    |> String.replace(~r/Q/, "c")
+    |> String.replace(~r/J/, "d")
+    |> String.replace(~r/T/, "e")
+    |> String.replace(~r/9/, "f")
+    |> String.replace(~r/8/, "g")
+    |> String.replace(~r/7/, "h")
+    |> String.replace(~r/6/, "i")
+    |> String.replace(~r/5/, "j")
+    |> String.replace(~r/4/, "k")
+    |> String.replace(~r/3/, "l")
+    |> String.replace(~r/2/, "m")
+  end
+
   def solve(text) do
-    String.length(text)
+    _hands =
+      text
+      |> AOC.as_single_lines()
+      |> Enum.map(&AOC.delimited_by_spaces/1)
+      |> Enum.map(fn [hand, bid] ->
+        score = score(hand)
+
+        %{
+          hand: hand,
+          bid: String.to_integer(bid),
+          score: score,
+          comparable: score <> sortable_hand(hand)
+        }
+      end)
+      # |> IO.inspect()
+      |> Enum.sort_by(fn hand -> hand.comparable end)
+      |> Enum.reverse()
+      |> Enum.with_index(fn %{bid: bid}, rank -> (rank + 1) * bid end)
+      |> Enum.sum()
+  end
+
+  ##################################################
+
+  def sortable_hand2(hand) do
+    hand
+    |> String.replace(~r/A/, "a")
+    |> String.replace(~r/K/, "b")
+    |> String.replace(~r/Q/, "c")
+    |> String.replace(~r/T/, "d")
+    |> String.replace(~r/9/, "e")
+    |> String.replace(~r/8/, "f")
+    |> String.replace(~r/7/, "g")
+    |> String.replace(~r/6/, "h")
+    |> String.replace(~r/5/, "i")
+    |> String.replace(~r/4/, "j")
+    |> String.replace(~r/3/, "k")
+    |> String.replace(~r/2/, "l")
+    |> String.replace(~r/J/, "m")
+  end
+
+  # We can only do this because we know they're pre-sorted
+  # and card-ordering doesn't matter ([no straights])
+  # JOKERS have been translated to "m" and will sort to the end.
+  # 5 of a kind
+  def _score2([aaa, aaa, aaa, aaa, aaa]), do: "1"
+  def _score2([_aaa, "m", "m", "m", "m"]), do: "1"
+  def _score2([aaa, aaa, "m", "m", "m"]), do: "1"
+  def _score2([aaa, aaa, aaa, "m", "m"]), do: "1"
+  def _score2([aaa, aaa, aaa, aaa, "m"]), do: "1"
+  # 4 of a kind
+  def _score2([aaa, aaa, aaa, aaa, _bb]), do: "2"
+  def _score2([_bb, aaa, aaa, aaa, aaa]), do: "2"
+  def _score2([aaa, aaa, aaa, _bb, "m"]), do: "2"
+  def _score2([_bb, aaa, aaa, aaa, "m"]), do: "2"
+  def _score2([_bb, aaa, aaa, "m", "m"]), do: "2"
+  def _score2([aaa, aaa, _bb, "m", "m"]), do: "2"
+  # full house - cannot have two jokers
+  def _score2([aaa, aaa, aaa, bb, bb]), do: "3"
+  def _score2([bb, bb, aaa, aaa, aaa]), do: "3"
+  def _score2([bb, bb, aaa, aaa, "m"]), do: "3"
+  # 3 of a kind
+  def _score2([aaa, aaa, aaa, _b, _c]), do: "4"
+  def _score2([_b, aaa, aaa, aaa, _c]), do: "4"
+  def _score2([_b, _c, aaa, aaa, aaa]), do: "4"
+  def _score2([aaa, aaa, _b, _c, "m"]), do: "4"
+  def _score2([_b, aaa, aaa, _c, "m"]), do: "4"
+  def _score2([_b, _c, aaa, aaa, "m"]), do: "4"
+  def _score2([_a, _b, _c, "m", "m"]), do: "4"
+  # Two Pair - cannot have a joker
+  def _score2([aaa, aaa, bb, bb, _c]), do: "5"
+  def _score2([aaa, aaa, _c, bb, bb]), do: "5"
+  def _score2([_c, aaa, aaa, bb, bb]), do: "5"
+  # One Pair
+  def _score2([aaa, aaa, _b, _c, _d]), do: "6"
+  def _score2([_b, aaa, aaa, _c, _d]), do: "6"
+  def _score2([_b, _c, aaa, aaa, _d]), do: "6"
+  def _score2([_b, _c, _d, aaa, aaa]), do: "6"
+  def _score2([_a, _b, _c, _d, "m"]), do: "6"
+  # High Card?
+  def _score2([_a, _b, _c, _d, _e]), do: "7"
+
+  def score2(hand) do
+    hand
+    |> sortable_hand2()
+    |> String.split("", trim: true)
+    |> Enum.sort()
+    |> IO.inspect()
+    |> _score2()
   end
 
   def solve2(text) do
-    String.length(text)
+    _hands =
+      text
+      |> AOC.as_single_lines()
+      |> Enum.map(&AOC.delimited_by_spaces/1)
+      |> Enum.map(fn [hand, bid] ->
+        score = score2(hand)
+
+        %{
+          hand: hand,
+          bid: String.to_integer(bid),
+          score: score,
+          comparable: score <> sortable_hand2(hand)
+        }
+      end)
+      |> Enum.sort_by(fn hand -> hand.comparable end)
+      |> Enum.reverse()
+      |> IO.inspect()
+      |> Enum.with_index(fn %{bid: bid}, rank -> (rank + 1) * bid end)
+      |> IO.inspect()
+      |> Enum.sum()
   end
 end
 
+# Day07.score("32T3K") |> IO.inspect(label: "32T3K")
+
 p1data.()
 |> Day07.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 6440)")
 
 #
 
 p1data.()
 |> Day07.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 5905)")
 
 #
 ```

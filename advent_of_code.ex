@@ -143,7 +143,7 @@ defmodule AdventOfCode do
 
   def delimited_by_spaces(text) do
     text
-    |> String.split(~r/\s+/)
+    |> String.split(~r/\s+/, trim: true)
   end
 
   def delimited_by_colons(text) do

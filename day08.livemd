@@ -49,8 +49,30 @@ end
 
 ```elixir
 defmodule Day08 do
+  def add_node(<<node::24, " = ", left::24, ", ", right::24>>, acc) do
+    Map.put(acc, node, %{"L" => left, "R" => right})
+  end
+
   def solve(text) do
-    String.length(text)
+    [directions, maps] = AOC.as_doublespaced_paragraphs(text)
+    directions = String.split(directions, "", trim: true)
+
+    maps =
+      maps
+      |> AOC.as_single_lines()
+      # << header :: 8, length :: 32, message ::
+      # HGL = (LNC, LQT)
+      |> Enum.reduce(%{}, fn <<node::24, " = (", left::24, ", ", right::24, ")">>, acc ->
+        Map.put(acc, node, %{"L" => left, "R" => right})
+      end)
+
+    Stream.cycle(directions)
+    |> Enum.reduce_while({4_276_545, 0}, fn dir, {node, steps} ->
+      case node do
+        5_921_370 -> {:halt, steps}
+        _ -> {:cont, {maps[node][dir], steps + 1}}
+      end
+    end)
   end
 
   def solve2(text) do
@@ -60,7 +82,7 @@ end
 
 p1data.()
 |> Day08.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 6)")
 
 #
 
