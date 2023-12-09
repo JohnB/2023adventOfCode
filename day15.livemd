@@ -47,102 +47,14 @@ end
 
 ## Part 1
 
-###
-
-<!-- livebook:{"break_markdown":true} -->
-
-### 
-
-```
-Sensor at x=2, y=18: closest beacon is at x=-2, y=15 (4+)
-Sensor at x=9, y=16: closest beacon is at x=10, y=16
-Sensor at x=13, y=2: closest beacon is at x=15, y=3
-Sensor at x=12, y=14: closest beacon is at x=10, y=16
-Sensor at x=10, y=20: closest beacon is at x=10, y=16
-Sensor at x=14, y=17: closest beacon is at x=10, y=16
-Sensor at x=8, y=7: closest beacon is at x=2, y=10
-Sensor at x=2, y=0: closest beacon is at x=2, y=10
-Sensor at x=0, y=11: closest beacon is at x=2, y=10
-Sensor at x=20, y=14: closest beacon is at x=25, y=17
-Sensor at x=17, y=20: closest beacon is at x=21, y=22
-Sensor at x=16, y=7: closest beacon is at x=15, y=3
-Sensor at x=14, y=3: closest beacon is at x=15, y=3
-Sensor at x=20, y=1: closest beacon is at x=15, y=3
-```
-
-<!-- livebook:{"break_markdown":true} -->
-
-###
-
 ```elixir
 defmodule Day15 do
-  def taxi_dist([sx, sy, bx, by]), do: abs(sx - bx) + abs(sy - by)
-
-  def exes(rules) do
-    Enum.map(rules, fn r -> [r.sx, r.bx] end) |> List.flatten()
-  end
-
-  def eyes(rules) do
-    Enum.map(rules, fn r -> [r.sy, r.by] end) |> List.flatten()
-  end
-
-  @sensor_statement ~r/Sensor at x=(.+), y=(.+): closest beacon is at x=(.+), y=(.+)$/
   def solve(text) do
-    rules =
-      text
-      |> AOC.as_single_lines()
-      |> Enum.map(fn line ->
-        [_line | rest] = Regex.run(@sensor_statement, line)
-        [sx, sy, bx, by] = Enum.map(rest, &String.to_integer/1)
-        %{sx: sx, sy: sy, bx: bx, by: by, taxi_dist: taxi_dist([sx, sy, bx, by])}
-      end)
-      |> IO.inspect()
-
-    {left, right} = Enum.min_max(exes(rules))
-    {top, bottom} = Enum.min_max(eyes(rules))
-
-    _extents = %{
-      left: left,
-      right: right,
-      top: top,
-      bottom: bottom,
-      dx: right - left,
-      dy: bottom - top
-    }
-
-    # on row y=2000000, from -888612 to 4807592,
-    # how many of the 5696204 spots cannot have a beacon?
-    # For each rule, what area does it span on 2000000?
-    # How many of these overlap?
-    # line = 10
-    line = 2_000_000
-
-    [span0 | spans] =
-      rules
-      |> Enum.reject(fn rule -> abs(line - rule.sy) > rule.taxi_dist end)
-      |> Enum.map(fn rule ->
-        distance_from_sensor = abs(line - rule.sy)
-        side_extent = rule.taxi_dist - distance_from_sensor
-        [rule.sx - side_extent, rule.sx + side_extent]
-      end)
-      |> Enum.sort()
-      |> IO.inspect(label: "Started with #{Enum.count(rules)} rules")
-
-    # |> Enum.count()
-
-    Enum.reduce(spans, [span0], fn [x1, x2], [[xa, xb] | rest] = acc ->
-      IO.inspect([[x1, x2], [[xa, xb], rest]], label: "?????")
-
-      cond do
-        x1 <= xb and x2 <= xb -> acc
-        x1 <= xb -> [[xa, x2] | rest]
-        true -> [[x1, x2] | acc]
-      end
-      |> IO.inspect(label: "spans")
-    end)
+    text
   end
 
-  def solve2(_text) do
+  def solve2(text) do
+    text
   end
 end
 
@@ -150,16 +62,11 @@ p1data.()
 |> Day15.solve()
 |> IO.inspect(label: "\n*** Part 1 solution (example: )")
 
-# extents:
-# %{bottom: 22, dx: 27, dy: 22, left: -2, right: 25, top: 0}
-# %{bottom: 4625568, dx: 5696204, dy: 4563942, left: -888612, right: 4807592, top: 61626}
-# 3519824 (3552294 - 32470) is too low
+#
 
-# p1data.()
-# |> Day15.solve2()
-# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
+p1data.()
+|> Day15.solve2()
+|> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
 #
 ```
-
-### Part Two

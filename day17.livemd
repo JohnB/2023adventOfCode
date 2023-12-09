@@ -47,30 +47,14 @@ end
 
 ## Part 1
 
-###
-
-<!-- livebook:{"break_markdown":true} -->
-
-###
-
 ```elixir
 defmodule Day17 do
-  # Assume a 4x4 grid for the rocks
-  @rocks [
-    %{width: 4, cells: [0, 1, 2, 3]},
-    %{width: 4, cells: [1, 4, 5, 6, 9]},
-    %{width: 4, cells: [2, 6, 8, 9, 10]},
-    %{width: 4, cells: [0, 4, 8, 12]},
-    %{width: 4, cells: [0, 1, 4, 5]}
-  ]
   def solve(text) do
-    current_floor_heigts = [0, 0, 0, 0, 0, 0, 0]
-
     text
-    |> AOC.as_single_lines()
   end
 
-  def solve2(_text) do
+  def solve2(text) do
+    text
   end
 end
 
@@ -78,13 +62,11 @@ p1data.()
 |> Day17.solve()
 |> IO.inspect(label: "\n*** Part 1 solution (example: )")
 
-# 1669
+#
 
-# p1data.()
-# |> Day17.solve2()
-# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
+p1data.()
+|> Day17.solve2()
+|> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
 #
 ```
-
-### Part Two

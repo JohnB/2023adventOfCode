@@ -50,11 +50,11 @@ end
 ```elixir
 defmodule Day10 do
   def solve(text) do
-    String.length(text)
+    text
   end
 
   def solve2(text) do
-    String.length(text)
+    text
   end
 end
 

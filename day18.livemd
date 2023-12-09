@@ -47,145 +47,26 @@ end
 
 ## Part 1
 
-### Day 18: Boiling Boulders
-
-You and the elephants finally reach fresh air. You've emerged near the base of a large volcano that seems to be actively erupting! Fortunately, the lava seems to be flowing away from you and toward the ocean.
-
-Bits of lava are still being ejected toward you, so you're sheltering in the cavern exit a little longer. Outside the cave, you can see the lava landing in a pond and hear it loudly hissing as it solidifies.
-
-Depending on the specific compounds in the lava and speed at which it cools, it might be forming obsidian! The cooling rate should be based on the surface area of the lava droplets, so you take a quick scan of a droplet as it flies past you (your puzzle input).
-
-Because of how quickly the lava is moving, the scan isn't very good; its resolution is quite low and, as a result, it approximates the shape of the lava droplet with 1x1x1 cubes on a 3D grid, each given as its x,y,z position.
-
-To approximate the surface area, count the number of sides of each cube that are not immediately connected to another cube. So, if your scan were only two adjacent cubes like 1,1,1 and 2,1,1, each cube would have a single side covered and five sides exposed, a total surface area of 10 sides.
-
-Here's a larger example:
-
-```
-2,2,2
-1,2,2
-3,2,2
-2,1,2
-2,3,2
-2,2,1
-2,2,3
-2,2,4
-2,2,6
-1,2,5
-3,2,5
-2,1,5
-2,3,5
-```
-
-In the above example, after counting up all the sides that aren't connected to another cube, the total surface area is 64.
-
-What is the surface area of your scanned lava droplet?
-
-<!-- livebook:{"break_markdown":true} -->
-
-###
-
-<!-- livebook:{"break_markdown":true} -->
-
-###
-
 ```elixir
 defmodule Day18 do
-  @deltas [
-    [-1, 0, 0],
-    [1, 0, 0],
-    [0, -1, 0],
-    [0, 1, 0],
-    [0, 0, -1],
-    [0, 0, 1]
-  ]
-  def parse_cubes(text) do
-    text
-    |> AOC.as_single_lines()
-    |> Enum.map(fn str ->
-      [_x, _y, _z] = String.split(str, ",") |> Enum.map(&String.to_integer/1)
-    end)
-  end
-
   def solve(text) do
-    cubes = parse_cubes(text)
-    cube_set = MapSet.new(cubes)
-
-    Enum.reduce(cubes, 0, fn [x, y, z] = _cube, acc ->
-      open_neighbors =
-        @deltas
-        |> Enum.reject(fn [dx, dy, dz] = _delta ->
-          MapSet.member?(cube_set, [x + dx, y + dy, z + dz])
-        end)
-
-      acc + Enum.count(open_neighbors)
-    end)
+    text
   end
 
   def solve2(text) do
-    cubes = parse_cubes(text)
-
-    cube_map =
-      Enum.reduce(cubes, %{}, fn cube, acc ->
-        put_in(acc, [cube], "cube")
-      end)
-
-    neighbor_neighbors =
-      Enum.reduce(cubes, cube_map, fn [x, y, z] = _cube, acc0 ->
-        Enum.reduce(@deltas, acc0, fn [dx, dy, dz] = _delta, acc1 ->
-          neighbor_index = [x + dx, y + dy, z + dz]
-
-          case acc1[neighbor_index] do
-            nil -> put_in(acc1, [neighbor_index], 1)
-            "cube" -> acc1
-            previous_count -> put_in(acc1, [neighbor_index], 1 + previous_count)
-          end
-        end)
-      end)
-
-    # This only handles 1-cube-sized voids - larger ones need an algorithm to combine
-    simplistic =
-      neighbor_neighbors
-      # |> IO.inspect(label: "map")
-      |> Map.values()
-      |> Enum.reduce(0, fn value, acc ->
-        case value do
-          "cube" -> acc
-          6 -> acc
-          n -> acc + n
-        end
-      end)
-
-    neighbor_neighbors
-    |> Enum.reject(fn {_k, v} -> v == "cube" end)
-    |> Enum.filter(fn {_k, v} -> v in [2, 3, 4, 5] end)
-    # |> Enum.filter(fn {[x,y,z] = _k, _v} -> 
-    #   Enum.any?(@deltas, fn [dx,dy,dz] = _delta ->
-    #     neighbor_value = neighbor_neighbors[[[x+dx], [y+dy], [z+dz]]]
-    #     cond do
-    #       neighbor_value == nil -> false
-    #       neighbor_value in [4,5] -> true
-    #     end
-    #   end)
-    # end)
-    |> Enum.sort_by(fn {[x, y, z] = _k, v} -> {y, z, x, v} end)
-    |> IO.inspect(label: "lotta neighbors")
-
-    simplistic
+    text
   end
 end
 
-# p1data.()
-# |> Day18.solve()
-# |> IO.inspect(label: "\n*** Part 1 solution (example: 64)")
+p1data.()
+|> Day18.solve()
+|> IO.inspect(label: "\n*** Part 1 solution (example: )")
 
-# 4418
+#
 
 p1data.()
 |> Day18.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: 58)")
+|> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
-# 4136 (is too high)
+#
 ```
-
-### Part Two

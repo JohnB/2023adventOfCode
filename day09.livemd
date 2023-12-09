@@ -49,24 +49,65 @@ end
 
 ```elixir
 defmodule Day09 do
+  def calculate_diffs(nums) do
+    Enum.chunk_every(nums, 2, 1, :discard)
+    |> Enum.map(fn [a, b] -> b - a end)
+  end
+
+  def all_zeros?(nums) do
+    Enum.all?(nums, fn n -> n == 0 end)
+  end
+
+  def find_next_in_sequence(nums) do
+    if all_zeros?(nums) do
+      0
+    else
+      diffs = calculate_diffs(nums)
+      num = find_next_in_sequence(diffs)
+      List.last(nums) + num
+    end
+  end
+
+  def find_prev_in_sequence(nums) do
+    if all_zeros?(nums) do
+      0
+    else
+      diffs = calculate_diffs(nums)
+      num = find_prev_in_sequence(diffs)
+      List.first(nums) - num
+    end
+  end
+
   def solve(text) do
-    String.length(text)
+    text
+    |> AOC.as_single_lines()
+    |> Enum.map(fn line ->
+      nums = AOC.delimited_by_spaces(line) |> Enum.map(&String.to_integer/1)
+      find_next_in_sequence(nums)
+    end)
+    |> Enum.sum()
   end
 
   def solve2(text) do
-    String.length(text)
+    text
+    |> AOC.as_single_lines()
+    |> Enum.map(fn line ->
+      nums = AOC.delimited_by_spaces(line) |> Enum.map(&String.to_integer/1)
+      find_prev_in_sequence(nums)
+    end)
+    |> Enum.sum()
   end
 end
 
 p1data.()
 |> Day09.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 114)")
 
-#
+# 1842168671
 
 p1data.()
 |> Day09.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 2)")
 
-#
+# 903
 ```

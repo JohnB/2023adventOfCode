@@ -48,131 +48,13 @@ end
 ## Part 1
 
 ```elixir
-defmodule Day16.Mermaid do
-  def to_mermaid(text) do
-    relations =
-      text
-      |> AOC.as_single_lines()
-      |> Enum.reduce(%{}, fn line, acc ->
-        [_line, valve, rate, tunnels] =
-          Regex.run(~r/Valve (.+) has flow rate=(\d+); tunnels? leads? to valves? (.+)/, line)
-
-        tunnels = String.split(tunnels, ", ", trim: true)
-        put_in(acc, [valve], %{valve: valve, rate: rate, tunnels: tunnels})
-      end)
-
-    relations
-    |> Enum.map(fn {_k, v} ->
-      Enum.each(v.tunnels, fn cave ->
-        if cave > v.valve do
-          IO.puts("#{v.valve} --- #{cave}[#{cave} #{relations[cave].rate}];")
-        end
-      end)
-    end)
-
-    ""
-  end
-end
-
-p1data.()
-|> Day16.Mermaid.to_mermaid()
-
-# |> IO.inspect(label: "\n*** Part 1 solution (example: )")
-```
-
-<!-- Learn more at https://mermaid-js.github.io/mermaid -->
-
-```mermaid
-graph TD;
-TE --- YA[YA 12];
-BR --- CF[CF 0];
-JK --- QV[QV 0];
-JK --- UI[UI 8];
-HI --- TR[TR 18];
-DX --- HI[HI 0];
-BU --- ES[ES 13];
-KW --- YL[YL 23];
-KW --- MD[MD 0];
-RY --- TE[TE 0];
-OM --- UB[UB 0];
-OM --- VK[VK 11];
-JH --- RK[RK 9];
-JH --- ZW[ZW 0];
-YA --- YZ[YZ 0];
-AT --- DX[DX 0];
-AT --- BU[BU 0];
-AT --- NE[NE 0];
-AT --- BR[BR 0];
-AT --- TD[TD 0];
-CF --- XN[XN 7];
-AZ --- RC[RC 0];
-AZ --- RY[RY 0];
-AZ --- VA[VA 0];
-VK --- ZL[ZL 0];
-VK --- XJ[XJ 0];
-VA --- VK[VK 11];
-LJ --- SP[SP 0];
-LJ --- OC[OC 4];
-IA --- UI[UI 8];
-IA --- NE[NE 0];
-AA --- UB[UB 0];
-AA --- JO[JO 0];
-AA --- FF[FF 0];
-AA --- EB[EB 0];
-AA --- SP[SP 0];
-JO --- UI[UI 8];
-JT --- LQ[LQ 0];
-QI --- XN[XN 7];
-AQ --- AZ[AZ 14];
-AQ --- GQ[GQ 22];
-MD --- YA[YA 12];
-EY --- ZW[ZW 0];
-EY --- LQ[LQ 0];
-EY --- XC[XC 0];
-EY --- RC[RC 0];
-GQ --- SZ[SZ 0];
-GQ --- OW[OW 0];
-GQ --- XJ[XJ 0];
-OW --- YL[YL 23];
-RK --- UE[UE 0];
-OC --- PE[PE 0];
-OC --- QV[QV 0];
-OC --- QI[QI 0];
-OC --- WX[WX 0];
-DF --- OG[OG 0];
-DF --- RK[RK 9];
-OG --- XN[XN 7];
-CI --- VK[VK 11];
-CI --- PE[PE 0];
-UE --- UI[UI 8];
-FF --- VD[VD 0];
-VD --- XN[XN 7];
-AL --- ZL[ZL 0];
-AL --- WZ[WZ 25];
-IR --- XN[XN 7];
-IR --- UI[UI 8];
-TD --- WX[WX 0];
-SZ --- YZ[YZ 0];
-EB --- XC[XC 0];
-
-```
-
-<!-- livebook:{"break_markdown":true} -->
-
-###
-
-<!-- livebook:{"break_markdown":true} -->
-
-###
-
-```elixir
 defmodule Day16 do
   def solve(text) do
     text
-    |> AOC.as_single_lines()
   end
 
-  def solve2(_text) do
+  def solve2(text) do
+    text
   end
 end
 
@@ -180,13 +62,11 @@ p1data.()
 |> Day16.solve()
 |> IO.inspect(label: "\n*** Part 1 solution (example: )")
 
-# 1669
+#
 
-# p1data.()
-# |> Day16.solve2()
-# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
+p1data.()
+|> Day16.solve2()
+|> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
 #
 ```
-
-### Part Two
