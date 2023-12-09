@@ -117,10 +117,13 @@ defmodule Day07 do
           comparable: score <> sortable_hand(hand)
         }
       end)
-      # |> IO.inspect()
       |> Enum.sort_by(fn hand -> hand.comparable end)
       |> Enum.reverse()
-      |> Enum.with_index(fn %{bid: bid}, rank -> (rank + 1) * bid end)
+      # |> IO.inspect()
+      |> Enum.with_index(fn %{bid: bid}, rank ->
+        (rank + 1) * bid
+        # |> IO.inspect(label: "#{bid}*#{rank + 1}") 
+      end)
       |> Enum.sum()
   end
 
@@ -159,6 +162,7 @@ defmodule Day07 do
   def _score2([_bb, aaa, aaa, aaa, "m"]), do: "2"
   def _score2([_bb, aaa, aaa, "m", "m"]), do: "2"
   def _score2([aaa, aaa, _bb, "m", "m"]), do: "2"
+  def _score2([_aaa, _bb, "m", "m", "m"]), do: "2"
   # full house - cannot have two jokers
   def _score2([aaa, aaa, aaa, bb, bb]), do: "3"
   def _score2([bb, bb, aaa, aaa, aaa]), do: "3"
@@ -189,7 +193,6 @@ defmodule Day07 do
     |> sortable_hand2()
     |> String.split("", trim: true)
     |> Enum.sort()
-    |> IO.inspect()
     |> _score2()
   end
 
@@ -207,12 +210,16 @@ defmodule Day07 do
           score: score,
           comparable: score <> sortable_hand2(hand)
         }
+
+        # |> IO.inspect()
       end)
       |> Enum.sort_by(fn hand -> hand.comparable end)
       |> Enum.reverse()
-      |> IO.inspect()
-      |> Enum.with_index(fn %{bid: bid}, rank -> (rank + 1) * bid end)
-      |> IO.inspect()
+      # |> IO.inspect()
+      |> Enum.with_index(fn %{bid: bid} = _item, rank ->
+        # if item.score == "7", do: IO.inspect(item, label: "#{rank + 1} * #{bid}") 
+        (rank + 1) * bid
+      end)
       |> Enum.sum()
   end
 end
@@ -223,11 +230,12 @@ p1data.()
 |> Day07.solve()
 |> IO.inspect(label: "\n*** Part 1 solution (example: 6440)")
 
-#
+# 250453939
 
 p1data.()
 |> Day07.solve2()
 |> IO.inspect(label: "\n*** Part 2 solution (example: 5905)")
 
-#
+# 248553970 is too low
+# 248652697 is correct after adding [_aaa, _bb, "m", "m", "m"] 4-of-a-kind
 ```
