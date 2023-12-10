@@ -49,20 +49,106 @@ end
 
 ```elixir
 defmodule Day10 do
+  def display_grid(grid, text \\ nil) do
+    text && IO.puts("--- #{text}")
+
+    0..grid.last_cell
+    |> Enum.chunk_every(grid.grid_width)
+    # |> IO.inspect(label: "Grid chunks")
+    |> Enum.map(fn indexes ->
+      indexes
+      |> Enum.map(fn index ->
+        # For a known-printable grid:
+        grid[index]
+        # For a somewhat-printable grid:
+        # (grid[index] >= @max_display) && "." || (@ascii_zero + grid[index])
+      end)
+      |> Enum.join("")
+      |> IO.puts()
+    end)
+
+    # |> IO.puts()
+  end
+
+  def move_up(grid, path, up) do
+    # IO.inspect(path, label: "up to #{up} #{grid[up]}")
+
+    case grid[up] do
+      "S" -> path
+      "|" -> move_up(grid, [up | path], up - grid.grid_width)
+      "7" -> move_left(grid, [up | path], up - 1)
+      "F" -> move_right(grid, [up | path], up + 1)
+      _ -> nil
+    end
+  end
+
+  def move_left(grid, path, left) do
+    # IO.inspect(path, label: "left to #{left} #{grid[left]}")
+
+    case grid[left] do
+      "S" -> path
+      "-" -> move_left(grid, [left | path], left - 1)
+      "L" -> move_up(grid, [left | path], left - grid.grid_width)
+      "F" -> move_down(grid, [left | path], left + grid.grid_width)
+      _ -> nil
+    end
+  end
+
+  def move_right(grid, path, right) do
+    # IO.inspect(path, label: "right to #{right} #{grid[right]}")
+
+    case grid[right] do
+      "S" -> path
+      "-" -> move_right(grid, [right | path], right + 1)
+      "7" -> move_down(grid, [right | path], right + grid.grid_width)
+      "J" -> move_up(grid, [right | path], right - grid.grid_width)
+      _ -> nil
+    end
+  end
+
+  def move_down(grid, path, down) do
+    # IO.inspect(path, label: "down to #{down} #{grid[down]}")
+
+    case grid[down] do
+      "S" -> path
+      "|" -> move_down(grid, [down | path], down + grid.grid_width)
+      "L" -> move_right(grid, [down | path], down + 1)
+      "J" -> move_left(grid, [down | path], down - 1)
+      _ -> nil
+    end
+  end
+
   def solve(text) do
-    text
+    grid = AOC.as_grid(text)
+    # IO.puts(AOC.display_grid(grid))
+
+    start =
+      0..grid.last_cell
+      |> Enum.find(fn cell -> grid[cell] == "S" end)
+
+    path =
+      move_up(grid, [start], start - grid.grid_width) ||
+        (rem(start, grid.grid_width) != 0 && move_left(grid, [start], start - 1)) ||
+        (rem(start + 1, grid.grid_width) != 0 && move_right(grid, [start], start + 1)) ||
+        move_down(grid, [start], start + grid.grid_width)
+
+    _result =
+      Enum.count(path) / 2
   end
 
   def solve2(text) do
-    text
+    grid = AOC.as_grid(text)
+
+    display_grid(grid, "local display_grid")
+    nil
   end
 end
 
 p1data.()
 |> Day10.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 8)")
 
-#
+# 6613
 
 p1data.()
 |> Day10.solve2()
