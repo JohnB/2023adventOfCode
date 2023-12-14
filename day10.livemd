@@ -49,10 +49,11 @@ end
 
 ```elixir
 defmodule Day10 do
+  
   def display_grid(grid, text \\ nil) do
     text && IO.puts("--- #{text}")
 
-    0..grid.last_cell
+    (0..grid.last_cell)
     |> Enum.chunk_every(grid.grid_width)
     # |> IO.inspect(label: "Grid chunks")
     |> Enum.map(fn indexes ->
@@ -66,15 +67,23 @@ defmodule Day10 do
       |> Enum.join("")
       |> IO.puts()
     end)
-
     # |> IO.puts()
   end
+
+  def finish(grid: grid, path: path) do
+    display_grid(grid, "FINISHED")
+    %{grid: grid, path: path}
+  end
+
+  @x "X" # path cell
+  @o "O" # Outside
+  @i "I" # Inside
 
   def move_up(grid, path, up) do
     # IO.inspect(path, label: "up to #{up} #{grid[up]}")
 
     case grid[up] do
-      "S" -> path
+      "S" -> finish(grid: grid, path: path)
       "|" -> move_up(grid, [up | path], up - grid.grid_width)
       "7" -> move_left(grid, [up | path], up - 1)
       "F" -> move_right(grid, [up | path], up + 1)
@@ -83,10 +92,8 @@ defmodule Day10 do
   end
 
   def move_left(grid, path, left) do
-    # IO.inspect(path, label: "left to #{left} #{grid[left]}")
-
     case grid[left] do
-      "S" -> path
+      "S" -> finish(grid: grid, path: path)
       "-" -> move_left(grid, [left | path], left - 1)
       "L" -> move_up(grid, [left | path], left - grid.grid_width)
       "F" -> move_down(grid, [left | path], left + grid.grid_width)
@@ -95,10 +102,8 @@ defmodule Day10 do
   end
 
   def move_right(grid, path, right) do
-    # IO.inspect(path, label: "right to #{right} #{grid[right]}")
-
     case grid[right] do
-      "S" -> path
+      "S" -> finish(grid: grid, path: path)
       "-" -> move_right(grid, [right | path], right + 1)
       "7" -> move_down(grid, [right | path], right + grid.grid_width)
       "J" -> move_up(grid, [right | path], right - grid.grid_width)
@@ -107,10 +112,8 @@ defmodule Day10 do
   end
 
   def move_down(grid, path, down) do
-    # IO.inspect(path, label: "down to #{down} #{grid[down]}")
-
     case grid[down] do
-      "S" -> path
+      "S" -> finish(grid: grid, path: path)
       "|" -> move_down(grid, [down | path], down + grid.grid_width)
       "L" -> move_right(grid, [down | path], down + 1)
       "J" -> move_left(grid, [down | path], down - 1)
@@ -120,26 +123,53 @@ defmodule Day10 do
 
   def solve(text) do
     grid = AOC.as_grid(text)
-    # IO.puts(AOC.display_grid(grid))
+    display_grid(grid)
 
     start =
       0..grid.last_cell
       |> Enum.find(fn cell -> grid[cell] == "S" end)
 
-    path =
+    %{grid: grid, path: path} =
       move_up(grid, [start], start - grid.grid_width) ||
         (rem(start, grid.grid_width) != 0 && move_left(grid, [start], start - 1)) ||
         (rem(start + 1, grid.grid_width) != 0 && move_right(grid, [start], start + 1)) ||
         move_down(grid, [start], start + grid.grid_width)
 
-    _result =
-      Enum.count(path) / 2
+    # convert to a map-of-maps so each path cell can get its own
+    # unique segment number - and multiple horizontal segments
+    # get the same value - so we can check the in/out of each cell
+    grid2 = grid
+      |> Enum.reduce(grid, fn {k, v}, acc ->
+        # Mark everything as "Outside"
+        Map.put(acc, k, %{value: k in path && v || @o, segment: nil, })
+      end)
+      |> IO.inspect(label: "map-o-maps")
+
+    {grid2, seg} = path
+      |> Enum.reduce({grid2, 0}, fn path_cell, {acc, segment} ->
+        IO.inspect([path_cell, segment, acc[path_cell]])
+        case acc[path_cell].value do
+          "|" -> {Map.put(acc, path_cell, %{acc[path_cell] | segment: segment}), segment}
+          "-" -> {Map.put(acc, path_cell, %{acc[path_cell] | segment: segment}), segment}
+          _ -> {Map.put(acc, path_cell, %{acc[path_cell] | segment: segment}), segment + 1}
+        end
+      end)
+
+    (0..grid.last_cell)
+    |> Enum.chunk_every(grid.grid_width)
+    |> Enum.reduce({0, :outside}, fn indexes, {in_count, where} = acc ->
+      |> Enum.reduce(acc, fn index, {in_count2, where2} ->
+        case {where, grid2[index]} do
+          
+        end
+      end)
+    end)
   end
 
-  def solve2(text) do
-    grid = AOC.as_grid(text)
+  def solve2(_text) do
+    # grid = AOC.as_grid(text)
 
-    display_grid(grid, "local display_grid")
+    # display_grid(grid, "local display_grid")
     nil
   end
 end

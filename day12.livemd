@@ -49,24 +49,106 @@ end
 
 ```elixir
 defmodule Day12 do
+  def damaged_run_lengths(record) do
+    record
+    |> String.split(~r/[^#]/, trim: true)
+    |> Enum.map(&String.length/1)
+  end
+
+  def matching_permutations(required_run_lengths, chars, prev_chars \\ "")
+
+  def matching_permutations(required_run_lengths, [char], prev_chars) do
+    if char == "?" do
+      if damaged_run_lengths(prev_chars <> ".") == required_run_lengths ||
+           damaged_run_lengths(prev_chars <> "#") == required_run_lengths do
+        # IO.puts("match? '#{prev_chars <> "."}' or '#{prev_chars <> "#"}'")
+        1
+      else
+        0
+      end
+    else
+      if damaged_run_lengths(prev_chars <> char) == required_run_lengths do
+        # IO.puts("match: #{prev_chars <> char}")
+        1
+      else
+        0
+      end
+    end
+  end
+
+  def matching_permutations(required_run_lengths, [char | rest], prev_chars) do
+    case char do
+      "?" ->
+        matching_permutations(required_run_lengths, rest, prev_chars <> ".") +
+          matching_permutations(required_run_lengths, rest, prev_chars <> "#")
+
+      _ ->
+        matching_permutations(required_run_lengths, rest, prev_chars <> char)
+    end
+  end
+
   def solve(text) do
     text
+    |> AOC.as_single_lines()
+    |> Enum.map(fn line ->
+      [record, required_run_lengths] = String.split(line, " ", trim: true)
+      # |> IO.inspect()
+
+      required_run_lengths =
+        required_run_lengths
+        |> String.split(",", trim: true)
+        |> Enum.map(fn digits -> digits |> String.to_integer() end)
+
+      # |> IO.inspect(label: "'#{record}' .vs #{inspect(damaged_run_lengths(record))}")
+
+      chars = String.split(record, "", trim: true)
+
+      matching_permutations(required_run_lengths, chars)
+      |> IO.inspect(label: "matching_permutations")
+    end)
+    |> Enum.sum()
   end
 
   def solve2(text) do
     text
+    |> AOC.as_single_lines()
+    |> Enum.map(fn line ->
+      [record, required_run_lengths] = String.split(line, " ", trim: true)
+      # |> IO.inspect()
+
+      run_lengths =
+        required_run_lengths
+        |> String.split(",", trim: true)
+        |> Enum.map(fn digits -> digits |> String.to_integer() end)
+
+      # |> IO.inspect(label: "'#{record}' .vs #{inspect(damaged_run_lengths(record))}")
+
+      record = Enum.join([record, record, record, record, record], "?")
+
+      required_run_lengths =
+        run_lengths ++ run_lengths ++ run_lengths ++ run_lengths ++ run_lengths
+
+      IO.puts(record)
+      IO.inspect(required_run_lengths)
+
+      chars = String.split(record, "", trim: true)
+
+      matching_permutations(required_run_lengths, chars)
+      |> IO.inspect(label: "matching_permutations")
+    end)
+    |> Enum.sum()
   end
 end
 
 p1data.()
 |> Day12.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 21)")
 
-#
+# 7633
 
 p1data.()
 |> Day12.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 525152)")
 
 #
 ```

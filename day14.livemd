@@ -49,24 +49,233 @@ end
 
 ```elixir
 defmodule Day14 do
+  def grid_cells(grid) do
+    0..grid.last_cell
+  end
+
+  def grid_rows(grid) do
+    grid_cells(grid)
+    |> Enum.chunk_every(grid.grid_width)
+  end
+
+  def grid_x(grid, cell), do: rem(cell, grid.grid_width)
+  def grid_y(grid, cell), do: div(cell, grid.grid_width)
+
+  def to_text_grid(grid) do
+    grid_rows(grid)
+    |> Enum.map(fn row ->
+      Enum.map(row, fn x -> grid[x] end)
+      |> Enum.join("")
+    end)
+    |> Enum.join("\n")
+  end
+
+  def invert(grid) do
+    grid_cells(grid)
+    |> Enum.reduce(
+      %{
+        grid
+        | grid_width: grid.grid_height,
+          grid_height: grid.grid_width,
+          last_cell: grid.last_cell
+      },
+      fn cell, acc ->
+        Map.put(acc, grid_x(grid, cell) * grid.grid_height + grid_y(grid, cell), grid[cell])
+      end
+    )
+  end
+
+  def display_grid(grid, text \\ nil) do
+    text && IO.puts("\n--- #{text}")
+
+    0..grid.last_cell
+    |> Enum.chunk_every(grid.grid_width)
+    # |> IO.inspect(label: "Grid chunks")
+    |> Enum.map(fn indexes ->
+      indexes
+      |> Enum.map(fn index ->
+        # For a known-printable grid:
+        grid[index]
+        # For a somewhat-printable grid:
+        # (grid[index] >= @max_display) && "." || (@ascii_zero + grid[index])
+      end)
+      |> Enum.join("")
+      |> IO.puts()
+    end)
+
+    grid
+  end
+
+  # TODO: add the above ^^^ to AOC
+
+  def build_compass(grid) do
+    %{
+      north: -grid.grid_width,
+      east: 1,
+      south: grid.grid_width,
+      west: -1
+    }
+  end
+
+  # this only works for :north and :south
+  def _tilt(grid, delta) do
+    tilted_grid =
+      grid_cells(grid)
+      |> Enum.reduce(grid, fn cell_id, acc ->
+        case {acc[cell_id], acc[cell_id + delta]} do
+          {"O", "."} ->
+            acc
+            |> Map.put(cell_id + delta, "O")
+            |> Map.put(cell_id, ".")
+
+          {"O", _} ->
+            acc
+
+          _ ->
+            acc
+        end
+      end)
+
+    if grid == tilted_grid do
+      grid
+    else
+      _tilt(tilted_grid, delta)
+    end
+  end
+
+  def tilt(grid, direction) do
+    delta = build_compass(grid)[direction]
+    _tilt(grid, delta)
+  end
+
   def solve(text) do
-    text
+    tilted_grid =
+      text
+      |> AOC.as_grid()
+      |> tilt(:north)
+
+    # |> display_grid("")
+
+    calculate_load(tilted_grid, :north)
+    # grid_cells(tilted_grid)
+    # |> Enum.reduce(0, fn cell_id, acc ->
+    #   if tilted_grid[cell_id] == "O" do
+    #     acc + (tilted_grid.grid_height - grid_y(tilted_grid, cell_id))
+    #   else
+    #     acc
+    #   end
+    # end)
+  end
+
+  def on_edge_of_board?(grid, cell_id, direction) do
+    case direction do
+      :north -> grid_y(grid, cell_id) == 0
+      :west -> grid_x(grid, cell_id) == 0
+      :south -> grid_y(grid, cell_id) == grid.grid_height - 1
+      :east -> grid_x(grid, cell_id) == grid.grid_width - 1
+    end
+  end
+
+  def _tilt2(grid, delta, direction) do
+    tilted_grid =
+      grid_cells(grid)
+      |> Enum.reduce(grid, fn cell_id, acc ->
+        if on_edge_of_board?(acc, cell_id, direction) do
+          acc
+        else
+          next_cell = cell_id + delta
+
+          case {acc[cell_id], acc[next_cell]} do
+            {"O", "."} ->
+              acc
+              |> Map.put(next_cell, "O")
+              |> Map.put(cell_id, ".")
+
+            {"O", _} ->
+              acc
+
+            _ ->
+              acc
+          end
+        end
+      end)
+
+    if grid == tilted_grid do
+      grid
+    else
+      _tilt2(tilted_grid, delta, direction)
+    end
+  end
+
+  def tilt2(grid, direction) do
+    delta = build_compass(grid)[direction]
+    _tilt2(grid, delta, direction)
+  end
+
+  def cycle(grid) do
+    grid
+    |> tilt2(:north)
+    |> tilt2(:west)
+    |> tilt2(:south)
+    |> tilt2(:east)
+  end
+
+  @big_number 1_000_000_000
+
+  def calculate_load(grid, :north) do
+    grid_cells(grid)
+    |> Enum.reduce(0, fn cell_id, acc ->
+      if grid[cell_id] == "O" do
+        acc + (grid.grid_height - grid_y(grid, cell_id))
+      else
+        acc
+      end
+    end)
   end
 
   def solve2(text) do
-    text
+    grid = AOC.as_grid(text)
+
+    {grids, repeat_point, {cycle_start, _load}} =
+      1..@big_number
+      |> Enum.reduce_while({grid, %{}}, fn iteration, {tilted_grid, acc} ->
+        # IO.puts("at iteration #{iteration}")
+        if acc[tilted_grid] do
+          # IO.inspect(acc[tilted_grid], label: "iteration #{iteration} matches")
+          # display_grid(tilted_grid, "iteration #{iteration} matches #{acc[tilted_grid]}")
+          # IO.inspect(Map.values(acc) |> Enum.sort(), label: "values")
+          {:halt, {acc, iteration, acc[tilted_grid]}}
+        else
+          {:cont,
+           {cycle(tilted_grid),
+            Map.put(acc, tilted_grid, {iteration, calculate_load(tilted_grid, :north)})}}
+        end
+      end)
+
+    # IO.inspect(Map.values(grids))
+    cycle_length = repeat_point - cycle_start
+    num_uncycled = cycle_start - 1
+    final_cycle_index = 1 + num_uncycled + rem(@big_number - num_uncycled, cycle_length)
+
+    {final_cycle, _} =
+      Enum.find(grids, fn {_grid, {cycle_num, _load}} -> cycle_num == final_cycle_index end)
+
+    # IO.inspect([cycle_start, repeat_point, cycle_length, num_uncycled, final_cycle_index])
+    calculate_load(final_cycle, :north)
   end
 end
 
 p1data.()
 |> Day14.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 136)")
 
-#
+# 110090
 
 p1data.()
 |> Day14.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 64)")
 
-#
+# 99224 is too high
+# 99217 is too high
+# 95254 !!!
 ```

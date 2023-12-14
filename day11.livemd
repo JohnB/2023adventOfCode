@@ -49,24 +49,224 @@ end
 
 ```elixir
 defmodule Day11 do
+  def grid_cells(grid) do
+    0..grid.last_cell
+  end
+
+  def grid_rows(grid) do
+    grid_cells(grid)
+    |> Enum.chunk_every(grid.grid_width)
+  end
+
+  def display_grid(grid, text \\ nil) do
+    text && IO.puts("--- #{text}")
+
+    0..grid.last_cell
+    |> Enum.chunk_every(grid.grid_width)
+    # |> IO.inspect(label: "Grid chunks")
+    |> Enum.map(fn indexes ->
+      indexes
+      |> Enum.map(fn index ->
+        # For a known-printable grid:
+        grid[index]
+        # For a somewhat-printable grid:
+        # (grid[index] >= @max_display) && "." || (@ascii_zero + grid[index])
+      end)
+      |> Enum.join("")
+      |> IO.puts()
+    end)
+
+    grid
+  end
+
+  def grid_x(grid, cell), do: rem(cell, grid.grid_width)
+  def grid_y(grid, cell), do: div(cell, grid.grid_width)
+
+  def invert(grid) do
+    grid_cells(grid)
+    |> Enum.reduce(
+      %{
+        grid
+        | grid_width: grid.grid_height,
+          grid_height: grid.grid_width,
+          last_cell: grid.last_cell
+      },
+      fn cell, acc ->
+        Map.put(acc, grid_x(grid, cell) * grid.grid_height + grid_y(grid, cell), grid[cell])
+      end
+    )
+  end
+
+  def distance(x1, x2, y1, y2) do
+    abs(x1 - x2) + abs(y1 - y2)
+  end
+
+  def distances(grid, list, cell) do
+    x = grid_x(grid, cell)
+    y = div(cell, grid.grid_width)
+
+    list
+    |> Enum.map(fn galaxy ->
+      distance(x, galaxy.x, y, galaxy.y)
+    end)
+  end
+
+  def add_galaxy(grid, list_of_galaxies, cell) do
+    distances = distances(grid, list_of_galaxies, cell)
+
+    new_galaxy = %{
+      cell: cell,
+      x: grid_x(grid, cell),
+      y: grid_y(grid, cell),
+      distances: distances
+    }
+
+    [new_galaxy | list_of_galaxies]
+  end
+
+  @empty_space "."
+  def dotted_line?(line) do
+    line
+    |> String.split("", trim: true)
+    |> Enum.all?(fn char -> char == @empty_space end)
+  end
+
+  def to_text_grid(grid) do
+    grid_rows(grid)
+    |> Enum.map(fn row ->
+      Enum.map(row, fn x -> grid[x] end)
+      |> Enum.join("")
+    end)
+    |> Enum.join("\n")
+  end
+
+  def expand_rows(text) do
+    AOC.as_single_lines(text)
+    |> Enum.map(fn line ->
+      if dotted_line?(line) do
+        [line, line]
+      else
+        line
+      end
+    end)
+    |> List.flatten()
+    |> Enum.join("\n")
+  end
+
   def solve(text) do
-    text
+    grid =
+      text
+      |> expand_rows()
+      |> AOC.as_grid()
+      # |> display_grid("before invert")
+      |> invert()
+      |> to_text_grid()
+      # |> IO.inspect(label: "before 2nd expansion")
+      |> expand_rows()
+      # |> IO.inspect(label: "after 2nd expansion")
+      |> AOC.as_grid()
+      |> invert()
+
+    # |> display_grid("after 2nd invert")
+
+    galaxies =
+      grid
+      # |> IO.inspect(label: "before collecting galaxies")
+      |> grid_cells()
+      |> Enum.reduce([], fn cell, list_of_galaxies ->
+        case grid[cell] do
+          "." -> list_of_galaxies
+          "#" -> add_galaxy(grid, list_of_galaxies, cell)
+        end
+      end)
+
+    galaxies
+    |> Enum.map(fn galaxy -> galaxy.distances end)
+    |> List.flatten()
+    # |> IO.inspect(label: "before sum")
+    |> Enum.sum()
+  end
+
+  def add_galaxy2(grid, list_of_galaxies, cell) do
+    new_galaxy = %{
+      x: grid_x(grid, cell),
+      y: grid_y(grid, cell)
+    }
+
+    [new_galaxy | list_of_galaxies]
+  end
+
+  def reverse_expansions(text) do
+    AOC.as_single_lines(text)
+    |> Enum.with_index()
+    |> Enum.reduce([], fn {line, index}, acc ->
+      if dotted_line?(line) do
+        [index | acc]
+      else
+        acc
+      end
+    end)
+    |> IO.inspect()
   end
 
   def solve2(text) do
-    text
+    grid = AOC.as_grid(text)
+
+    # just collect x,y values for each galaxy
+    galaxies =
+      grid
+      # |> IO.inspect(label: "before collecting galaxies")
+      |> grid_cells()
+      |> Enum.reduce([], fn cell, list_of_galaxies ->
+        case grid[cell] do
+          "." -> list_of_galaxies
+          "#" -> add_galaxy2(grid, list_of_galaxies, cell)
+        end
+      end)
+
+    # for each blank row, add N to everything below its Y value
+    # For N of 10, 100, 1_000_000
+    n = 10
+    rows_to_add = reverse_expansions(text)
+
+    cols_to_add =
+      text
+      |> AOC.as_grid()
+      |> invert()
+      |> to_text_grid()
+      |> reverse_expansions()
+
+    far_galaxies =
+      Enum.map(galaxies, fn gal ->
+        Enum.reduce(rows_to_add, gal, fn row, galaxy ->
+          (galaxy.y >= row && %{galaxy | y: n + galaxy.y}) || galaxy
+        end)
+      end)
+
+    far_galaxies =
+      Enum.map(far_galaxies, fn gal ->
+        Enum.reduce(cols_to_add, gal, fn col, galaxy ->
+          (galaxy.x >= col && %{galaxy | x: n + galaxy.x}) || galaxy
+        end)
+      end)
+
+    Enum.map(far_galaxies, fn gal ->
+      nil
+    end)
+    |> List.flatten()
+    |> Enum.sum()
   end
 end
 
 p1data.()
 |> Day11.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 374)")
 
-#
+# 9536038
 
 p1data.()
 |> Day11.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 1030/8410)")
 
 #
 ```

@@ -46,6 +46,7 @@ defmodule AdventOfCode do
   end
 
   # We only want 4 neighbors, not 8
+  # Order: [up, left, right, down]
   # NOTE: DOES NOT HANDLE INFINITE GRID
   def neighbors4(grid, index) do
     [
@@ -85,21 +86,26 @@ defmodule AdventOfCode do
     |> Enum.filter(fn neighbor -> grid[neighbor] end) #off-board
   end
 
-#  @ascii_zero 48
-#  @max_display 40
+  @ascii_zero 48
+  @max_display 40
   def display_grid(grid, text \\ nil) do
     text && IO.puts("--- #{text}")
 
     (0..grid.last_cell)
     |> Enum.chunk_every(grid.grid_width)
+    |> IO.inspect(label: "Grid chunks")
     |> Enum.map(fn indexes ->
       indexes
-      |> Enum.map(fn index -> grid[index]
-#        (grid[index] >= @max_display) && "." || (@ascii_zero + grid[index])
+      |> Enum.map(fn index ->
+        # For a known-printable grid:
+        grid[index]
+        # For a somewhat-printable grid:
+        # (grid[index] >= @max_display) && "." || (@ascii_zero + grid[index])
       end)
-      |> Enum.join("\n")
+      |> Enum.join("")
+      |> IO.puts()
     end)
-
+    |> IO.puts()
   end
 
   # Paragraph-based helpers
