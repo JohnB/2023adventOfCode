@@ -7,7 +7,7 @@ Mix.install([
   {:kino, "~> 0.7.0"}
 ])
 
-IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+IEx.Helpers.c("/Users/johnb/dev/2023adventOfCode/advent_of_code.ex")
 alias AdventOfCode, as: AOC
 alias Kino.Input
 
@@ -49,8 +49,134 @@ end
 
 ```elixir
 defmodule Day16 do
+  def grid_cells(grid) do
+    0..grid.last_cell
+  end
+
+  def grid_rows(grid) do
+    grid_cells(grid)
+    |> Enum.chunk_every(grid.grid_width)
+  end
+
+  def grid_x(grid, cell), do: rem(cell, grid.grid_width)
+  def grid_y(grid, cell), do: div(cell, grid.grid_width)
+
+  def to_text_grid(grid) do
+    grid_rows(grid)
+    |> Enum.map(fn row ->
+      Enum.map(row, fn x -> grid[x] end)
+      |> Enum.join("")
+    end)
+    |> Enum.join("\n")
+  end
+
+  def invert(grid) do
+    grid_cells(grid)
+    |> Enum.reduce(
+      %{
+        grid
+        | grid_width: grid.grid_height,
+          grid_height: grid.grid_width,
+          last_cell: grid.last_cell
+      },
+      fn cell, acc ->
+        Map.put(acc, grid_x(grid, cell) * grid.grid_height + grid_y(grid, cell), grid[cell])
+      end
+    )
+  end
+
+  def display_grid(grid, text \\ nil) do
+    text && IO.puts("\n--- #{text}")
+
+    0..grid.last_cell
+    |> Enum.chunk_every(grid.grid_width)
+    # |> IO.inspect(label: "Grid chunks")
+    |> Enum.map(fn indexes ->
+      indexes
+      |> Enum.map(fn index ->
+        # For a known-printable grid:
+        grid[index]
+        # For a somewhat-printable grid:
+        # (grid[index] >= @max_display) && "." || (@ascii_zero + grid[index])
+      end)
+      |> Enum.join("")
+      |> IO.puts()
+    end)
+
+    grid
+  end
+
+  def on_edge_of_board?(grid, cell_id, direction) do
+    case direction do
+      :north -> grid_y(grid, cell_id) == 0
+      :west -> grid_x(grid, cell_id) == 0
+      :south -> grid_y(grid, cell_id) == grid.grid_height - 1
+      :east -> grid_x(grid, cell_id) == grid.grid_width - 1
+    end
+  end
+
+  def build_compass(grid) do
+    %{
+      north: -grid.grid_width,
+      east: 1,
+      south: grid.grid_width,
+      west: -1
+    }
+  end
+
+  # TODO: add the above ^^^ to AOC
+
+  def next_cell(grid, {cell_id, direction}) do
+    if on_edge_of_board?(grid, cell_id, direction) do
+      # this beam falls off edge of world
+      nil
+    else
+      compass = build_compass(grid)
+      cell2 = cell_id + compass[direction]
+
+      case {grid[cell2], direction} |> IO.inspect() do
+        {"/", :east} -> {cell2, :north}
+        {"/", :west} -> {cell2, :south}
+        {"\\", :east} -> {cell2, :south}
+        {"\\", :west} -> {cell2, :north}
+        {"-", :south} -> [{cell2, :east}, {cell2, :west}]
+        {"-", :north} -> [{cell2, :east}, {cell2, :west}]
+        {"|", :east} -> [{cell2, :north}, {cell2, :south}]
+        {"|", :west} -> [{cell2, :north}, {cell2, :south}]
+        _ -> {cell2, direction}
+      end
+    end
+  end
+
   def solve(text) do
-    text
+    grid = AOC.as_grid(text)
+    visited = MapSet.new()
+
+    Stream.cycle([1, 2])
+    |> Enum.reduce_while({[{0, :east}], visited}, fn _x, {beams, visits} ->
+      if beams == [] do
+        {:halt, visits}
+      else
+        {:cont,
+         beams
+         |> Enum.reduce({[], visits}, fn beam, {beams2, visits2} ->
+           if MapSet.member?(visits2, beam) do
+             # same cell and direction - this beam is done
+             {beams2, visits2}
+           else
+             # does this beam have a future? is next step off board?
+             beam3 = next_cell(grid, beam)
+
+             {case beam3 do
+                nil -> beams2
+                {cell_id, dir} -> [{cell_id, dir}] ++ beams2
+                [_a, _b] = pair -> pair ++ beams2
+              end, MapSet.put(visits2, beam)}
+           end
+           |> IO.inspect()
+         end)}
+      end
+    end)
   end
 
   def solve2(text) do
@@ -60,13 +186,13 @@ end
 
 p1data.()
 |> Day16.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 46)")
 
 #
 
-p1data.()
-|> Day16.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+# p1data.()
+# |> Day16.solve2()
+# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
 #
 ```

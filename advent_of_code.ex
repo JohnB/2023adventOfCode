@@ -86,14 +86,68 @@ defmodule AdventOfCode do
     |> Enum.filter(fn neighbor -> grid[neighbor] end) #off-board
   end
 
+  def grid_cells(grid) do
+    (0..grid.last_cell)
+  end
+
+  def grid_rows(grid) do
+    grid_cells(grid)
+    |> Enum.chunk_every(grid.grid_width)
+  end
+
+  def grid_x(grid, cell), do: rem(cell, grid.grid_width)
+  def grid_y(grid, cell), do: div(cell, grid.grid_width)
+
+  def to_text_grid(grid) do
+    grid_rows(grid)
+    |> Enum.map(fn row ->
+      Enum.map(row, fn x -> grid[x] end)
+      |> Enum.join("")
+    end)
+    |> Enum.join("\n")
+  end
+
+  def invert(grid) do
+    grid_cells(grid)
+    |> Enum.reduce(%{grid |
+      grid_width: grid.grid_height,
+      grid_height: grid.grid_width,
+      last_cell: grid.last_cell
+    }, fn cell, acc ->
+      Map.put(acc, grid_x(grid, cell) * grid.grid_height + grid_y(grid, cell), grid[cell])
+    end)
+  end
+
+  @doc """
+    @spec on_edge_of_board?(%{}, integer, [:north | :south | :east | :west])
+    on_edge_of_board?(grid, cell_id, direction)
+  """
+  def on_edge_of_board?(grid, cell_id, direction) do
+    case direction do
+      :north -> grid_y(grid, cell_id) == 0
+      :west -> grid_x(grid, cell_id) == 0
+      :south -> grid_y(grid, cell_id) == grid.grid_height - 1
+      :east -> grid_x(grid, cell_id) == grid.grid_width - 1
+    end
+  end
+
+  def build_compass(grid) do
+    %{
+      north: -grid.grid_width,
+      east: 1,
+      south: grid.grid_width,
+      west: -1
+    }
+  end
+
   @ascii_zero 48
   @max_display 40
   def display_grid(grid, text \\ nil) do
-    text && IO.puts("--- #{text}")
+    text && IO.puts("\n--- #{text}")
 
-    (0..grid.last_cell)
+    0..grid.last_cell
     |> Enum.chunk_every(grid.grid_width)
-    |> IO.inspect(label: "Grid chunks")
+      # |> IO.inspect(label: "Grid chunks")
     |> Enum.map(fn indexes ->
       indexes
       |> Enum.map(fn index ->
@@ -105,9 +159,10 @@ defmodule AdventOfCode do
       |> Enum.join("")
       |> IO.puts()
     end)
-    |> IO.puts()
-  end
 
+    grid
+  end
+  
   # Paragraph-based helpers
   def as_single_lines(multiline_text) do
     multiline_text

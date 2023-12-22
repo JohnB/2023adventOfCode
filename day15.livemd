@@ -7,7 +7,7 @@ Mix.install([
   {:kino, "~> 0.7.0"}
 ])
 
-IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+IEx.Helpers.c("/Users/johnb/dev/2023adventOfCode/advent_of_code.ex")
 alias AdventOfCode, as: AOC
 alias Kino.Input
 
@@ -49,24 +49,106 @@ end
 
 ```elixir
 defmodule Day15 do
+  def hash(step) do
+    # Increase the current value by the ASCII code you just determined.
+    # Set the current value to itself multiplied by 17.
+    # Set the current value to the remainder of dividing itself by 256.
+    step
+    |> String.codepoints()
+    |> Enum.reduce(0, fn char, acc ->
+      rem((acc + :binary.first(char)) * 17, 256)
+      # |> IO.inspect()
+    end)
+
+    # |> IO.inspect(label: "HASH")
+  end
+
   def solve(text) do
     text
+    |> String.split(",", trim: true)
+    |> Enum.map(&hash/1)
+    |> Enum.sum()
+  end
+
+  def empty_boxes do
+    0..255
+    |> Enum.reduce(%{}, fn box_id, acc -> Map.put(acc, box_id, []) end)
   end
 
   def solve2(text) do
     text
+    |> String.split(",", trim: true)
+    |> Enum.reduce(empty_boxes(), fn step, boxes ->
+      # IO.puts(step)
+      if step =~ ~r/=/ do
+        [label, focal_length] = String.split(step, "=", trim: true)
+        focal_length = String.to_integer(focal_length)
+        box_id = hash(label)
+
+        Map.get_and_update!(boxes, box_id, fn lenses ->
+          existing_item_and_index =
+            lenses
+            |> Enum.with_index()
+            |> Enum.find(fn {{label1, _lens}, _index} -> label1 == label end)
+
+          # IO.inspect([box_id, existing_item_and_index], label: "box_id, existing_index")
+          if existing_item_and_index do
+            {_item, index} = existing_item_and_index
+            {lenses, List.replace_at(lenses, index, {label, focal_length})}
+          else
+            # store the lenses backwards - to be reversed later
+            {lenses, [{label, focal_length} | lenses]}
+          end
+
+          # |> IO.inspect(label: "replacement")
+        end)
+        |> elem(1)
+      else
+        label_to_replace = String.replace(step, ~r/\-.*/, "")
+        box_id = hash(label_to_replace)
+        # IO.inspect([label_to_replace, box_id, boxes], label: "label_to_replace, box_id, boxes")
+        Map.get_and_update!(boxes, box_id, fn lenses ->
+          existing_item_and_index =
+            lenses
+            |> Enum.with_index()
+            |> Enum.find(fn {{label, _lens}, _index} -> label == label_to_replace end)
+
+          # IO.inspect([box_id, existing_item_and_index], label: "box_id, existing_index")
+          if existing_item_and_index do
+            {_item, index} = existing_item_and_index
+            {lenses, List.delete_at(lenses, index)}
+          else
+            {lenses, lenses}
+          end
+        end)
+        |> elem(1)
+      end
+
+      # |> IO.inspect(label: "end of loop")
+    end)
+    |> Enum.map(fn {box_id, list} ->
+      list
+      |> Enum.reverse()
+      |> Enum.with_index()
+      |> Enum.reduce(0, fn {{_label, focal_length}, index}, acc ->
+        # IO.inspect([label, acc, index, focal_length, box_id])
+        acc + (1 + index) * focal_length * (box_id + 1)
+        # |> IO.inspect(label: label)
+      end)
+    end)
+    |> Enum.sum()
   end
 end
 
 p1data.()
 |> Day15.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 1320)")
 
-#
+# 521434
 
 p1data.()
 |> Day15.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 145)")
 
-#
+# 248279
 ```

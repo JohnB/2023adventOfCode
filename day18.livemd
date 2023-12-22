@@ -7,7 +7,7 @@ Mix.install([
   {:kino, "~> 0.7.0"}
 ])
 
-IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+IEx.Helpers.c("/Users/johnb/dev/2023adventOfCode/advent_of_code.ex")
 alias AdventOfCode, as: AOC
 alias Kino.Input
 
@@ -49,8 +49,46 @@ end
 
 ```elixir
 defmodule Day18 do
+  @grid_width 10_000
+  @start 500
+
   def solve(text) do
-    text
+    plan =
+      AOC.as_single_lines(text)
+      |> Enum.reduce([], fn line, acc ->
+        [dir, dist, color] = String.split(line, " ", trim: true)
+        [%{dir: dir, dist: String.to_integer(dist), color: color} | acc]
+      end)
+      |> Enum.reverse()
+
+    steps =
+      plan
+      |> Enum.reduce(
+        [%{x: @start, y: @start, color: "(#ffffff)"}],
+        fn %{dir: dir, dist: dist, color: color}, [%{x: x, y: y} | _rest] = acc ->
+          {x2, y2} =
+            case dir do
+              "U" -> {x, y - @grid_width * dist}
+              "D" -> {x, y + @grid_width * dist}
+              "L" -> {x - dist, y}
+              "R" -> {x + dist, y}
+            end
+
+          [%{x: x2, y: y2, color: color} | acc]
+        end
+      )
+
+    extents =
+      steps
+      |> Enum.reduce(
+        %{xmin: @start, xmax: @start, ymin: @start, ymax: @start},
+        fn %{x: x2, y: y2}, %{xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax} ->
+          %{xmin: min(xmin, x2), xmax: max(xmax, x2), ymin: min(ymin, y2), ymax: max(ymax, y2)}
+        end
+      )
+
+    real_y = fn y -> (y - @start) / @grid_width end
+    IO.inspect([extents, real_y.(extents.ymin), real_y.(extents.ymax)])
   end
 
   def solve2(text) do
@@ -60,13 +98,13 @@ end
 
 p1data.()
 |> Day18.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 62)")
 
 #
 
-p1data.()
-|> Day18.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+# p1data.()
+# |> Day18.solve2()
+# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
 #
 ```

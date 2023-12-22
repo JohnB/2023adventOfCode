@@ -7,7 +7,7 @@ Mix.install([
   {:kino, "~> 0.7.0"}
 ])
 
-IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+IEx.Helpers.c("/Users/johnb/dev/2023adventOfCode/advent_of_code.ex")
 alias AdventOfCode, as: AOC
 alias Kino.Input
 
@@ -50,7 +50,7 @@ end
 ```elixir
 defmodule Day17 do
   def solve(text) do
-    text
+    grid = AOC.as_grid_of_digits(text)
   end
 
   def solve2(text) do
@@ -60,7 +60,7 @@ end
 
 p1data.()
 |> Day17.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 102)")
 
 #
 

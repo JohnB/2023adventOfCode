@@ -7,7 +7,7 @@ Mix.install([
   {:kino, "~> 0.7.0"}
 ])
 
-IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+IEx.Helpers.c("/Users/johnb/dev/2023adventOfCode/advent_of_code.ex")
 alias AdventOfCode, as: AOC
 alias Kino.Input
 
@@ -50,7 +50,26 @@ end
 ```elixir
 defmodule Day19 do
   def solve(text) do
-    text
+    [workflow, ratings] = AOC.as_doublespaced_paragraphs(text)
+
+    # px{a<2006:qkq,m>2090:A,rfg}
+    workflow =
+      workflow
+      |> AOC.as_single_lines()
+      |> Enum.reduce(%{}, fn line, acc ->
+        [name, flows] = String.split(line, "{", trim: true)
+
+        [last | flows] =
+          flows
+          |> String.split(",", trim: true)
+          |> Enum.reverse()
+
+        flows =
+          flows
+          |> Enum.map(fn flow ->
+            [equation, destination] = String.split(flow, ":", trim: true)
+          end)
+      end)
   end
 
   def solve2(text) do
@@ -60,13 +79,13 @@ end
 
 p1data.()
 |> Day19.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 19114)")
 
 #
 
-p1data.()
-|> Day19.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+# p1data.()
+# |> Day19.solve2()
+# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
 #
 ```

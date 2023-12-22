@@ -7,7 +7,7 @@ Mix.install([
   {:kino, "~> 0.7.0"}
 ])
 
-IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+IEx.Helpers.c("/Users/johnb/dev/2023adventOfCode/advent_of_code.ex")
 alias AdventOfCode, as: AOC
 alias Kino.Input
 
@@ -49,8 +49,114 @@ end
 
 ```elixir
 defmodule Day20 do
+  def dest_names(dest) do
+    String.split(dest, ", ", trim: true)
+  end
+
+  def src_module("%" <> name, dest_names) do
+    %{
+      name: name,
+      type: :flip_flop,
+      value: :off,
+      dests: dest_names,
+      trigger: nil,
+      action: fn acc, pulse_dir, me -> nq_pulse(acc, :low, me.dests) end
+    }
+  end
+
+  def src_module("&" <> name, dest_names) do
+    %{
+      name: name,
+      type: :conjunction,
+      value:
+        Enum.reduce(dest_names, %{}, fn name, acc ->
+          Map.put(acc, name, :low)
+        end),
+      dests: dest_names,
+      trigger: nil,
+      # fn acc, _pulse_dir, me,  -> nq_pulse(acc, :low, me.dests) end
+      action: nil
+    }
+  end
+
+  def src_module(name, dest_names) do
+    %{
+      name: name,
+      type: :broadcast,
+      value: :off,
+      dests: dest_names,
+      trigger: nil,
+      # fn acc, _pulse_dir, me,  -> nq_pulse(acc, :low, me.dests) end
+      action: nil
+    }
+  end
+
+  def enqueue_pulse(config, pulse_dir, module_name_or_names) do
+    module_name_or_names
+    |> List.wrap()
+    |> Enum.reduce(config, fn module_name, acc ->
+      qqq = :queue.in({pulse_dir, module_name}, config.controls.qqq)
+      put_in(acc, [:contols, :qqq], qqq)
+    end)
+  end
+
+  @total_button_pushes 1000
+
+  def process_entire_queue(config, times \\ 1) do
+    Stream.cycle([1, 2])
+    |> Enum.reduce_while(config, fn _x, acc ->
+      {item, qqq} = :queue.out(acc.controls.qqq)
+
+      case item do
+        :empty ->
+          {:halt, acc}
+
+        {:value, {pulse_dir, module_name}} ->
+          {:cont, "zzzzz"}
+      end
+    end)
+  end
+
+  @button_module %{
+    name: :button,
+    type: :poke,
+    value: :off,
+    dests: ["broadcast"],
+    trigger: nil,
+    action: fn acc, _pulse_dir, me -> enqueue_pulse(acc, :low, me.dests) end
+  }
+
   def solve(text) do
-    text
+    acc_template = %{
+      data: %{"@button_module" => @button_module},
+      controls: %{
+        button_pushes: 0,
+        low_pulses: 0,
+        high_pulses: 0,
+        # from https://blog.jola.dev/erlang-queue-module-elixir
+        # examples:
+        #  qqq = :queue.in("b", qqq)
+        #  {{:value, value3}, qqq} = :queue.out(qqq)
+        # . {:empty, {[], []}}
+        qqq: :queue.new()
+      }
+    }
+
+    config =
+      text
+      |> AOC.as_single_lines()
+      |> Enum.reduce(acc_template, fn line, acc ->
+        [src, dests] = String.split(line, " -> ", trim: true)
+        src = src_module(src, dest_names(dests))
+
+        put_in(acc, [:data, src.name], src)
+      end)
+
+    config
+    |> IO.inspect("before pressing")
+    |> enqueue_pulse(:_push, @button_module)
+    |> IO.inspect("after pressing")
+    |> process_entire_queue()
   end
 
   def solve2(text) do
@@ -60,13 +166,13 @@ end
 
 p1data.()
 |> Day20.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 11687500)")
 
 #
 
-p1data.()
-|> Day20.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+# p1data.()
+# |> Day20.solve2()
+# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
 #
 ```

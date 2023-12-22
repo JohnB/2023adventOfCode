@@ -7,7 +7,7 @@ Mix.install([
   {:kino, "~> 0.7.0"}
 ])
 
-IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+IEx.Helpers.c("/Users/johnb/dev/2023adventOfCode/advent_of_code.ex")
 alias AdventOfCode, as: AOC
 alias Kino.Input
 
@@ -49,8 +49,69 @@ end
 
 ```elixir
 defmodule Day21 do
+  @directions [:north, :south, :east, :west]
+  @start "S"
+  @rock "#"
+  # @garden "."
+  @part_1_steps 64
+
+  def mark_neighbors(%{grid: grid, steps: cell_ids}, step_number) do
+    compass = AOC.build_compass(grid)
+    possible_steps = for direction <- @directions, cell_id <- cell_ids, do: {direction, cell_id}
+
+    next_steps =
+      possible_steps
+      |> Enum.reduce([], fn {direction, cell_id}, acc ->
+        potential_cell = cell_id + compass[direction]
+
+        if AOC.on_edge_of_board?(grid, cell_id, direction) ||
+             grid[potential_cell] == @rock do
+          acc
+        else
+          [potential_cell | acc]
+        end
+      end)
+      |> Enum.uniq()
+
+    # |> Enum.sort()
+
+    IO.puts("#{step_number}: #{Enum.count(next_steps)}")
+
+    grid =
+      next_steps
+      |> Enum.reduce(grid, fn cell_id, acc ->
+        Map.put(acc, cell_id, step_number)
+      end)
+
+    # |> AOC.display_grid()
+
+    %{grid: grid, steps: next_steps}
+  end
+
   def solve(text) do
-    text
+    grid = AOC.as_grid(text)
+    IO.inspect([grid.grid_width, grid.grid_height], label: "dimensions")
+
+    start =
+      grid
+      |> AOC.grid_cells()
+      |> Enum.find(fn x -> grid[x] == @start end)
+
+    IO.inspect(String.length("oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO"),
+      label: "is it 64?"
+    )
+
+    # (1..@part_1_steps)
+    "oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO"
+    |> String.split("", trim: true)
+    |> Enum.reduce(
+      %{grid: grid, steps: [start]},
+      fn step_number, acc ->
+        mark_neighbors(acc, step_number)
+      end
+    )
+
+    nil
   end
 
   def solve2(text) do
@@ -62,11 +123,11 @@ p1data.()
 |> Day21.solve()
 |> IO.inspect(label: "\n*** Part 1 solution (example: )")
 
-#
+# 2331 is too low
 
-p1data.()
-|> Day21.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+# p1data.()
+# |> Day21.solve2()
+# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
 #
 ```

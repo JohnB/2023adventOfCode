@@ -7,7 +7,7 @@ Mix.install([
   {:kino, "~> 0.7.0"}
 ])
 
-IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+IEx.Helpers.c("/Users/johnb/dev/2023adventOfCode/advent_of_code.ex")
 alias AdventOfCode, as: AOC
 alias Kino.Input
 
@@ -49,11 +49,10 @@ end
 
 ```elixir
 defmodule Day10 do
-  
   def display_grid(grid, text \\ nil) do
     text && IO.puts("--- #{text}")
 
-    (0..grid.last_cell)
+    0..grid.last_cell
     |> Enum.chunk_every(grid.grid_width)
     # |> IO.inspect(label: "Grid chunks")
     |> Enum.map(fn indexes ->
@@ -67,6 +66,7 @@ defmodule Day10 do
       |> Enum.join("")
       |> IO.puts()
     end)
+
     # |> IO.puts()
   end
 
@@ -75,9 +75,12 @@ defmodule Day10 do
     %{grid: grid, path: path}
   end
 
-  @x "X" # path cell
-  @o "O" # Outside
-  @i "I" # Inside
+  # path cell
+  @x "X"
+  # Outside
+  @o "O"
+  # Inside
+  @i "I"
 
   def move_up(grid, path, up) do
     # IO.inspect(path, label: "up to #{up} #{grid[up]}")
@@ -138,16 +141,19 @@ defmodule Day10 do
     # convert to a map-of-maps so each path cell can get its own
     # unique segment number - and multiple horizontal segments
     # get the same value - so we can check the in/out of each cell
-    grid2 = grid
+    grid2 =
+      grid
       |> Enum.reduce(grid, fn {k, v}, acc ->
         # Mark everything as "Outside"
-        Map.put(acc, k, %{value: k in path && v || @o, segment: nil, })
+        Map.put(acc, k, %{value: (k in path && v) || @o, segment: nil})
       end)
       |> IO.inspect(label: "map-o-maps")
 
-    {grid2, seg} = path
+    {grid2, seg} =
+      path
       |> Enum.reduce({grid2, 0}, fn path_cell, {acc, segment} ->
         IO.inspect([path_cell, segment, acc[path_cell]])
+
         case acc[path_cell].value do
           "|" -> {Map.put(acc, path_cell, %{acc[path_cell] | segment: segment}), segment}
           "-" -> {Map.put(acc, path_cell, %{acc[path_cell] | segment: segment}), segment}
@@ -155,15 +161,18 @@ defmodule Day10 do
         end
       end)
 
-    (0..grid.last_cell)
-    |> Enum.chunk_every(grid.grid_width)
-    |> Enum.reduce({0, :outside}, fn indexes, {in_count, where} = acc ->
-      |> Enum.reduce(acc, fn index, {in_count2, where2} ->
-        case {where, grid2[index]} do
-          
-        end
-      end)
-    end)
+    IO.inspect([grid.last_cell, grid.grid_width], label: "grid2")
+    display_grid(grid2, "local display_grid")
+
+    # (0..grid.last_cell)
+    # |> Enum.chunk_every(grid.grid_width)
+    # |> Enum.reduce({0, :outside}, fn indexes, {in_count, where} = acc ->
+    #   |> Enum.reduce(acc, fn index, {in_count2, where2} ->
+    #     case {where, grid2[index]} do
+
+    #     end
+    #   end)
+    # end)
   end
 
   def solve2(_text) do

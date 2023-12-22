@@ -7,7 +7,7 @@ Mix.install([
   {:kino, "~> 0.7.0"}
 ])
 
-IEx.Helpers.c("/Users/johnb/dev/2022adventOfCode/advent_of_code.ex")
+IEx.Helpers.c("/Users/johnb/dev/2023adventOfCode/advent_of_code.ex")
 alias AdventOfCode, as: AOC
 alias Kino.Input
 
@@ -85,12 +85,48 @@ defmodule Day13 do
     )
   end
 
+  def off_by_one?(row1, row2) do
+    mismatches =
+      Enum.zip(String.codepoints(row1), String.codepoints(row2))
+      |> Enum.reduce(0, fn {a, b}, acc -> acc + ((a == b && 0) || 1) end)
+
+    mismatches == 1
+  end
+
+  def near_match?(row1, row2) do
+    # This direct comparison satisfies part 1 of the puzzle
+    # row1 == row2 ||
+
+    # But part two allows for 1-char smudges
+    off_by_one?(row1, row2)
+  end
+
+  def outward_rows_match?(rows, idx1, idx2) do
+    # IO.puts("outward_rows_match? #{idx1 - 1}, #{idx2 + 1}")
+    if idx1 > 0 && idx2 < Enum.count(rows) - 1 do
+      # outer rows exist - make sure they and the next also match
+      # IO.inspect([Enum.at(rows, idx1 - 1), Enum.at(rows, idx2 + 1)], label: "#{idx1 - 1} vs #{idx2 + 1}")
+      near_match?(Enum.at(rows, idx1 - 1), Enum.at(rows, idx2 + 1)) ||
+        outward_rows_match?(rows, idx1 - 1, idx2 + 1)
+    else
+      # IO.puts("off board?")
+      # off-board is assumed to match
+      true
+    end
+  end
+
   def solve(text) do
     text
     |> AOC.as_doublespaced_paragraphs()
     |> Enum.reduce(0, fn paragraph, acc ->
       rows = AOC.as_single_lines(paragraph)
 
+      rows_paired =
+        rows
+        |> Enum.with_index()
+        |> Enum.chunk_every(2, 1, :discard)
+
+      # |> IO.inspect()
       cols =
         paragraph
         |> AOC.as_grid()
@@ -98,22 +134,38 @@ defmodule Day13 do
         |> to_text_grid()
         |> AOC.as_single_lines()
 
-      midrow =
-        rows
-        |> Enum.chunk_every(2, 1)
-        |> Enum.with_index()
-        |> Enum.find(fn {[row1, row2], _index} -> row1 == row2 end)
-        |> IO.inspect()
-
-      midcol =
+      cols_paired =
         cols
-        |> Enum.chunk_every(2, 1)
         |> Enum.with_index()
-        |> Enum.find(fn {[row1, row2], _index} -> row1 == row2 end)
-        |> IO.inspect()
+        |> Enum.chunk_every(2, 1, :discard)
+
+      # |> IO.inspect()
+
+      midrow =
+        rows_paired
+        # [{"#.##..##.", 0}, {"..#.##.#.", 1}]
+        |> Enum.find(fn [{row1, idx1}, {row2, idx2}] ->
+          near_match?(row1, row2) &&
+            outward_rows_match?(rows, idx1, idx2)
+        end)
+
+      # |> IO.inspect()
+      midcol =
+        cols_paired
+        |> Enum.find(fn [{row1, idx1}, {row2, idx2}] ->
+          # row1 == row2 &&
+          near_match?(row1, row2) &&
+            outward_rows_match?(cols, idx1, idx2)
+        end)
+
+      # |> IO.inspect()
 
       IO.inspect([midrow, midcol], label: "midrow & col")
-      acc + ((midrow && (1 + elem(midrow, 1)) * 10) || 1 + elem(midcol, 1))
+
+      acc +
+        ((midrow &&
+            elem(List.last(midrow), 1) * 100) ||
+           elem(List.last(midcol), 1))
     end)
   end
 
@@ -126,11 +178,14 @@ p1data.()
 |> Day13.solve()
 |> IO.inspect(label: "\n*** Part 1 solution (example: 405)")
 
-#
+# 34911
 
 # p1data.()
 # |> Day13.solve2()
-# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
+# |> IO.inspect(label: "\n*** Part 2 solution (example: 400)")
 
-#
+# 34911 is too high
+# 34994 is also too high
+# 38631 is still too high
+# 40855 <- not tried since I know its too high
 ```
