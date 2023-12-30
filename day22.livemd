@@ -49,8 +49,25 @@ end
 
 ```elixir
 defmodule Day22 do
+  # return [z,y,x]
+  def to_point(line) do
+    line
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.to_integer/1)
+    |> Enum.reverse()
+  end
+
   def solve(text) do
-    text
+    bricks =
+      text
+      |> AOC.as_single_lines()
+      |> Enum.map(fn line ->
+        [end1, end2] = String.split(line, "~", trim: true)
+        end1 = to_point(end1)
+        end2 = to_point(end2)
+        Enum.sort([end1, end2])
+      end)
+      |> Enum.sort()
   end
 
   def solve2(text) do
@@ -64,9 +81,9 @@ p1data.()
 
 #
 
-p1data.()
-|> Day22.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+# p1data.()
+# |> Day22.solve2()
+# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
 #
 ```

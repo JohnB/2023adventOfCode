@@ -49,8 +49,85 @@ end
 
 ```elixir
 defmodule Day23 do
+  @start 1
+  @left_or_up ["<", "^"]
+  @right_or_down [">", "v"]
+
+  def delta4(grid) do
+    [-grid.grid_width, -1, 1, grid.grid_width]
+  end
+
+  def neighbor4(grid, cell_id) do
+    grid
+    |> delta4()
+    |> Enum.map(fn x -> cell_id + x end)
+  end
+
+  def find_path(grid, cell_id, path) do
+    # IO.inspect([cell_id, grid[cell_id], path], as_lists: true)
+    case grid[cell_id] do
+      "." ->
+        find_path(
+          grid,
+          neighbor4(grid, cell_id)
+          |> Enum.find(fn neighbor ->
+            if neighbor in path do
+              false
+            else
+              grid[neighbor] in [".", ">", "v"]
+            end
+          end),
+          [cell_id | path]
+        )
+
+      "v" ->
+        [cell_id + grid.grid_height, cell_id] ++ path
+
+      ">" ->
+        [cell_id + 1, cell_id] ++ path
+
+      _ ->
+        [path]
+    end
+  end
+
   def solve(text) do
-    text
+    grid = AOC.as_grid(text)
+    IO.inspect([grid.grid_width, grid.grid_height])
+    AOC.display_grid(grid)
+
+    # Encountering "<" or "^" is an error
+    nil = Enum.find(grid, fn {_k, v} -> v in @left_or_up end)
+
+    # Mark the beginning and end as "v", like all the one-way valves.
+    grid =
+      Map.put(grid, @start, "v")
+      |> Map.put(grid.last_cell - @start, "v")
+
+    # Find and follow all paths from "v" or ">"
+    # to the next "v" or ">"
+    # paths = (0.. 300)
+    paths =
+      AOC.grid_cells(grid)
+      |> Enum.reduce([], fn cell_id, acc ->
+        case grid[cell_id] do
+          ">" -> [find_path(grid, cell_id + 1, [cell_id])] ++ acc
+          "v" -> [find_path(grid, cell_id + grid.grid_width, [cell_id])] ++ acc
+          _ -> acc
+        end
+      end)
+      |> Enum.map(fn path ->
+        %{
+          # path: path, 
+          length: Enum.count(path),
+          start: List.last(path),
+          finish: List.first(path)
+        }
+      end)
+      |> Enum.reverse()
+      |> IO.inspect(as_lists: true)
+
+    nil
   end
 
   def solve2(text) do
@@ -60,13 +137,13 @@ end
 
 p1data.()
 |> Day23.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: )")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 94)")
 
 #
 
-p1data.()
-|> Day23.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+# p1data.()
+# |> Day23.solve2()
+# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
 
 #
 ```

@@ -206,7 +206,8 @@ defmodule Day11 do
         acc
       end
     end)
-    |> IO.inspect()
+
+    # |> IO.inspect()
   end
 
   def solve2(text) do
@@ -224,10 +225,13 @@ defmodule Day11 do
         end
       end)
 
+    # |> IO.inspect(label: "galaxies")
+
     # for each blank row, add N to everything below its Y value
     # For N of 10, 100, 1_000_000
-    n = 10
+    n = 1_000_000 - 1
     rows_to_add = reverse_expansions(text)
+    # |> IO.inspect(label: "rows_to_add")
 
     cols_to_add =
       text
@@ -236,12 +240,16 @@ defmodule Day11 do
       |> to_text_grid()
       |> reverse_expansions()
 
+    # |> IO.inspect(label: "cols_to_add")
+
     far_galaxies =
       Enum.map(galaxies, fn gal ->
         Enum.reduce(rows_to_add, gal, fn row, galaxy ->
           (galaxy.y >= row && %{galaxy | y: n + galaxy.y}) || galaxy
         end)
       end)
+
+    # |> IO.inspect(label: "far_galaxies1")
 
     far_galaxies =
       Enum.map(far_galaxies, fn gal ->
@@ -250,11 +258,12 @@ defmodule Day11 do
         end)
       end)
 
-    Enum.map(far_galaxies, fn gal ->
-      nil
-    end)
-    |> List.flatten()
-    |> Enum.sum()
+    # |> IO.inspect(label: "far_galaxies2")
+
+    gals = for gal1 <- far_galaxies, gal2 <- far_galaxies, do: {gal1, gal2}
+
+    Enum.reduce(gals, 0, fn {g1, g2}, acc -> acc + distance(g1.x, g2.x, g1.y, g2.y) end)
+    |> div(2)
   end
 end
 
@@ -268,5 +277,6 @@ p1data.()
 |> Day11.solve2()
 |> IO.inspect(label: "\n*** Part 2 solution (example: 1030/8410)")
 
-#
+# 53414166 is too low
+# 447744640566
 ```

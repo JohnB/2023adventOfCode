@@ -4,7 +4,8 @@
 
 ```elixir
 Mix.install([
-  {:kino, "~> 0.7.0"}
+  {:kino, "~> 0.7.0"},
+  {:nx, "~> 0.6.4"}
 ])
 
 IEx.Helpers.c("/Users/johnb/dev/2023adventOfCode/advent_of_code.ex")
@@ -51,6 +52,7 @@ end
 defmodule Day24 do
   def solve(text) do
     text
+    Nx.LinAlg.determinant(Nx.tensor([[1, 2], [3, 4]]))
   end
 
   def solve2(text) do

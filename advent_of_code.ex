@@ -140,8 +140,8 @@ defmodule AdventOfCode do
     }
   end
 
-  @ascii_zero 48
-  @max_display 40
+#  @ascii_zero 48
+#  @max_display 40
   def display_grid(grid, text \\ nil) do
     text && IO.puts("\n--- #{text}")
 

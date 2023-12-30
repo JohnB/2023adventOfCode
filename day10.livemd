@@ -70,23 +70,11 @@ defmodule Day10 do
     # |> IO.puts()
   end
 
-  def finish(grid: grid, path: path) do
-    display_grid(grid, "FINISHED")
-    %{grid: grid, path: path}
-  end
-
-  # path cell
-  @x "X"
-  # Outside
-  @o "O"
-  # Inside
-  @i "I"
-
   def move_up(grid, path, up) do
     # IO.inspect(path, label: "up to #{up} #{grid[up]}")
 
     case grid[up] do
-      "S" -> finish(grid: grid, path: path)
+      "S" -> path
       "|" -> move_up(grid, [up | path], up - grid.grid_width)
       "7" -> move_left(grid, [up | path], up - 1)
       "F" -> move_right(grid, [up | path], up + 1)
@@ -95,8 +83,10 @@ defmodule Day10 do
   end
 
   def move_left(grid, path, left) do
+    # IO.inspect(path, label: "left to #{left} #{grid[left]}")
+
     case grid[left] do
-      "S" -> finish(grid: grid, path: path)
+      "S" -> path
       "-" -> move_left(grid, [left | path], left - 1)
       "L" -> move_up(grid, [left | path], left - grid.grid_width)
       "F" -> move_down(grid, [left | path], left + grid.grid_width)
@@ -105,8 +95,10 @@ defmodule Day10 do
   end
 
   def move_right(grid, path, right) do
+    # IO.inspect(path, label: "right to #{right} #{grid[right]}")
+
     case grid[right] do
-      "S" -> finish(grid: grid, path: path)
+      "S" -> path
       "-" -> move_right(grid, [right | path], right + 1)
       "7" -> move_down(grid, [right | path], right + grid.grid_width)
       "J" -> move_up(grid, [right | path], right - grid.grid_width)
@@ -115,8 +107,10 @@ defmodule Day10 do
   end
 
   def move_down(grid, path, down) do
+    # IO.inspect(path, label: "down to #{down} #{grid[down]}")
+
     case grid[down] do
-      "S" -> finish(grid: grid, path: path)
+      "S" -> path
       "|" -> move_down(grid, [down | path], down + grid.grid_width)
       "L" -> move_right(grid, [down | path], down + 1)
       "J" -> move_left(grid, [down | path], down - 1)
@@ -126,72 +120,107 @@ defmodule Day10 do
 
   def solve(text) do
     grid = AOC.as_grid(text)
-    display_grid(grid)
+    # IO.puts(AOC.display_grid(grid))
 
     start =
       0..grid.last_cell
       |> Enum.find(fn cell -> grid[cell] == "S" end)
 
-    %{grid: grid, path: path} =
+    path =
       move_up(grid, [start], start - grid.grid_width) ||
         (rem(start, grid.grid_width) != 0 && move_left(grid, [start], start - 1)) ||
         (rem(start + 1, grid.grid_width) != 0 && move_right(grid, [start], start + 1)) ||
         move_down(grid, [start], start + grid.grid_width)
 
-    # convert to a map-of-maps so each path cell can get its own
-    # unique segment number - and multiple horizontal segments
-    # get the same value - so we can check the in/out of each cell
-    grid2 =
-      grid
-      |> Enum.reduce(grid, fn {k, v}, acc ->
-        # Mark everything as "Outside"
-        Map.put(acc, k, %{value: (k in path && v) || @o, segment: nil})
-      end)
-      |> IO.inspect(label: "map-o-maps")
+    # IO.inspect([grid.grid_width, path], label: "path")
+    _result = Enum.count(path) / 2
+  end
 
-    {grid2, seg} =
-      path
-      |> Enum.reduce({grid2, 0}, fn path_cell, {acc, segment} ->
-        IO.inspect([path_cell, segment, acc[path_cell]])
+  def flood_fill(grid, cell_id, char) do
+    compass = AOC.build_compass(grid)
 
-        case acc[path_cell].value do
-          "|" -> {Map.put(acc, path_cell, %{acc[path_cell] | segment: segment}), segment}
-          "-" -> {Map.put(acc, path_cell, %{acc[path_cell] | segment: segment}), segment}
-          _ -> {Map.put(acc, path_cell, %{acc[path_cell] | segment: segment}), segment + 1}
+    [:north, :south, :east, :west]
+    |> Enum.reduce(grid, fn dir, acc ->
+      case {acc[cell_id], AOC.on_edge_of_board?(acc, cell_id, dir)} do
+        {"x", true} -> Map.put(acc, cell_id, char)
+        {"x", false} -> Map.put(acc, cell_id, char) |> flood_fill(cell_id + compass[dir], char)
+        _ -> acc
+      end
+      |> AOC.display_grid()
+    end)
+  end
+
+  def solve2(text) do
+    grid = AOC.as_grid(text)
+    # IO.puts(AOC.display_grid(grid))
+
+    start =
+      0..grid.last_cell
+      |> Enum.find(fn cell -> grid[cell] == "S" end)
+
+    path =
+      move_up(grid, [start], start - grid.grid_width) ||
+        (rem(start, grid.grid_width) != 0 && move_left(grid, [start], start - 1)) ||
+        (rem(start + 1, grid.grid_width) != 0 && move_right(grid, [start], start + 1)) ||
+        move_down(grid, [start], start + grid.grid_width)
+
+    # IO.inspect([grid.grid_width, path], label: "path")
+
+    grid =
+      AOC.grid_cells(grid)
+      |> Enum.reduce(grid, fn cell_id, acc ->
+        if cell_id in path do
+          acc
+        else
+          Map.put(acc, cell_id, "x")
         end
       end)
 
-    IO.inspect([grid.last_cell, grid.grid_width], label: "grid2")
-    display_grid(grid2, "local display_grid")
-
-    # (0..grid.last_cell)
-    # |> Enum.chunk_every(grid.grid_width)
-    # |> Enum.reduce({0, :outside}, fn indexes, {in_count, where} = acc ->
-    #   |> Enum.reduce(acc, fn index, {in_count2, where2} ->
-    #     case {where, grid2[index]} do
-
-    #     end
-    #   end)
-    # end)
-  end
-
-  def solve2(_text) do
-    # grid = AOC.as_grid(text)
-
-    # display_grid(grid, "local display_grid")
-    nil
+    results =
+      AOC.grid_rows(grid)
+      |> Enum.reduce(0, fn row, total_inside ->
+        Enum.reduce(
+          row,
+          %{
+            num_inside: 0,
+            state: "outside",
+            last_turn: nil
+          },
+          fn cell_id, acc ->
+            case {acc.state, acc.last_turn, grid[cell_id]} do
+              {"outside", _, "F"} -> %{acc | state: "from_outside", last_turn: "F"}
+              {"outside", _, "L"} -> %{acc | state: "from_outside", last_turn: "L"}
+              {"outside", _, "|"} -> %{acc | state: "inside"}
+              {"from_inside", "F", "J"} -> %{acc | state: "outside", last_turn: nil}
+              {"from_inside", "F", "7"} -> %{acc | state: "inside", last_turn: nil}
+              {"from_inside", "L", "J"} -> %{acc | state: "inside", last_turn: nil}
+              {"from_inside", "L", "7"} -> %{acc | state: "outside", last_turn: nil}
+              {"from_outside", "F", "J"} -> %{acc | state: "inside", last_turn: nil}
+              {"from_outside", "F", "7"} -> %{acc | state: "outside", last_turn: nil}
+              {"from_outside", "L", "J"} -> %{acc | state: "outside", last_turn: nil}
+              {"from_outside", "L", "7"} -> %{acc | state: "inside", last_turn: nil}
+              {"inside", _, "F"} -> %{acc | state: "from_inside", last_turn: "F"}
+              {"inside", _, "L"} -> %{acc | state: "from_inside", last_turn: "L"}
+              {"inside", _, "|"} -> %{acc | state: "outside"}
+              {"inside", _, "x"} -> %{acc | num_inside: 1 + acc.num_inside}
+              _ -> acc
+            end
+          end
+        ).num_inside + total_inside
+      end)
   end
 end
 
-p1data.()
-|> Day10.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: 8)")
+# p1data.()
+# |> Day10.solve()
+# |> IO.inspect(label: "\n*** Part 1 solution (example: 8)")
 
 # 6613
 
 p1data.()
 |> Day10.solve2()
-|> IO.inspect(label: "\n*** Part 2 solution (example: )")
+|> IO.inspect(label: "\n*** Part 2 solution (example: 10)")
 
-#
+# 511
+
 ```
