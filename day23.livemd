@@ -51,7 +51,7 @@ end
 defmodule Day23 do
   @start 1
   @left_or_up ["<", "^"]
-  @right_or_down [">", "v"]
+  # @right_or_down [">", "v"]
 
   def delta4(grid) do
     [-grid.grid_width, -1, 1, grid.grid_width]
@@ -91,10 +91,48 @@ defmodule Day23 do
     end
   end
 
-  def solve(text) do
+  def find_longest_path(
+        grid,
+        paths,
+        starts_at \\ @start,
+        result \\ %{
+          path: [],
+          length: 0,
+          start: @start,
+          finish: nil
+        }
+      ) do
+    paths
+    |> Enum.map(fn %{start: start, finish: finish} = segment ->
+      if start == starts_at do
+        # IO.inspect([[start], [starts_at], [finish]], label: "line: 56", as_lists: true)
+
+        [
+          find_longest_path(grid, paths, finish + 1, %{
+            path: result.path ++ segment.path,
+            length: result.length + segment.length,
+            start: @start,
+            finish: finish
+          }),
+          find_longest_path(grid, paths, finish + grid.grid_width, %{
+            path: result.path ++ segment.path,
+            length: result.length + segment.length,
+            start: @start,
+            finish: finish
+          })
+        ]
+      else
+        [result]
+      end
+    end)
+    |> List.flatten()
+    |> Enum.max_by(fn path -> path.length end)
+  end
+
+  def as_grid_and_paths(text) do
     grid = AOC.as_grid(text)
-    IO.inspect([grid.grid_width, grid.grid_height])
-    AOC.display_grid(grid)
+    IO.inspect([grid.grid_width, grid.grid_height, grid.grid_width * grid.grid_height])
+    # AOC.display_grid(grid)
 
     # Encountering "<" or "^" is an error
     nil = Enum.find(grid, fn {_k, v} -> v in @left_or_up end)
@@ -118,32 +156,125 @@ defmodule Day23 do
       end)
       |> Enum.map(fn path ->
         %{
-          # path: path, 
+          path: path,
           length: Enum.count(path),
           start: List.last(path),
           finish: List.first(path)
         }
       end)
+      |> Enum.reject(fn %{length: length} -> length < 2 end)
       |> Enum.reverse()
-      |> IO.inspect(as_lists: true)
 
-    nil
+    # |> IO.inspect(as_lists: true)
+
+    {grid, paths}
+  end
+
+  def solve(text) do
+    {grid, paths} = as_grid_and_paths(text)
+    AOC.display_grid(grid)
+
+    %{
+      path: path,
+      length: length,
+      start: @start,
+      finish: finish
+    } = find_longest_path(grid, paths, @start)
+
+    IO.inspect([length, finish, Enum.count(path), Enum.count(Enum.uniq(path))])
+  end
+
+  def valid_deltas_from(grid, finish, longer_path) do
+    grid
+    |> AOC.build_compass()
+    |> Map.values()
+    |> Enum.map(fn x -> x + finish end)
+    |> IO.inspect(label: "\ndeltas")
+    |> Enum.reject(fn cell_id ->
+      cell_id in longer_path or
+        grid[cell_id] in [nil, "#"] or
+        cell_id < 0
+    end)
+    |> IO.inspect(label: "valid deltas")
+  end
+
+  def find_longest_path2(
+        grid,
+        paths,
+        starts_at \\ @start,
+        result \\ %{
+          path: [],
+          length: 0,
+          start: @start,
+          finish: nil
+        }
+      ) do
+    paths
+    |> Enum.map(fn %{start: start, finish: finish} = segment ->
+      longer_path = result.path ++ segment.path
+
+      cond do
+        start == starts_at ->
+          valid_deltas_from(grid, finish, longer_path)
+          |> Enum.map(fn delta ->
+            find_longest_path2(grid, paths, delta, %{
+              path: longer_path,
+              length: result.length + segment.length,
+              start: @start,
+              finish: finish
+            })
+          end)
+
+        finish == starts_at ->
+          valid_deltas_from(grid, start, longer_path)
+          |> Enum.map(fn delta ->
+            find_longest_path2(grid, paths, delta, %{
+              path: longer_path,
+              length: result.length + segment.length,
+              start: @start,
+              finish: start
+            })
+          end)
+
+        true ->
+          [result]
+      end
+    end)
+    |> List.flatten()
+    |> Enum.max_by(fn path -> path.length end)
   end
 
   def solve2(text) do
-    text
+    {grid, paths} = as_grid_and_paths(text)
+
+    paths
+    |> Enum.each(fn x ->
+      IO.inspect([x.start, x.finish, x.length, grid[x.start], grid[x.finish]])
+    end)
+
+    IO.puts("===")
+
+    %{
+      path: path,
+      length: length,
+      start: @start,
+      finish: finish
+    } = find_longest_path2(grid, paths, @start)
+
+    IO.inspect([length, finish, Enum.count(path), Enum.count(Enum.uniq(path))])
   end
 end
 
 p1data.()
 |> Day23.solve()
-|> IO.inspect(label: "\n*** Part 1 solution (example: 94)")
+|> IO.inspect(label: "\n*** Part 1 solution (example: 94 = 96 - 2)")
 
-#
+# Mine counts the beginning and ending squares
+# 2210 (2212 - 2)
 
-# p1data.()
-# |> Day23.solve2()
-# |> IO.inspect(label: "\n*** Part 2 solution (example: )")
+p1data.()
+|> Day23.solve2()
+|> IO.inspect(label: "\n*** Part 2 solution (example: 154 = 156 - 2)")
 
 #
 ```
