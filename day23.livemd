@@ -189,13 +189,15 @@ defmodule Day23 do
     |> AOC.build_compass()
     |> Map.values()
     |> Enum.map(fn x -> x + finish end)
-    |> IO.inspect(label: "\ndeltas")
+    # |> IO.inspect(label: "\ndeltas")
     |> Enum.reject(fn cell_id ->
       cell_id in longer_path or
         grid[cell_id] in [nil, "#"] or
         cell_id < 0
     end)
-    |> IO.inspect(label: "valid deltas")
+    |> IO.inspect(
+      label: "valid deltas (#{Enum.count(longer_path)} / #{Enum.count(Enum.uniq(path))})"
+    )
   end
 
   def find_longest_path2(
@@ -244,6 +246,18 @@ defmodule Day23 do
     |> Enum.max_by(fn path -> path.length end)
   end
 
+  def mark_path(grid, path) do
+    AOC.grid_cells(grid)
+    |> Enum.reduce(grid, fn cell_id, acc ->
+      if cell_id in path do
+        %{acc | cell_id => "O"}
+      else
+        acc
+      end
+    end)
+    |> AOC.display_grid()
+  end
+
   def solve2(text) do
     {grid, paths} = as_grid_and_paths(text)
 
@@ -260,6 +274,8 @@ defmodule Day23 do
       start: @start,
       finish: finish
     } = find_longest_path2(grid, paths, @start)
+
+    mark_path(grid, path)
 
     IO.inspect([length, finish, Enum.count(path), Enum.count(Enum.uniq(path))])
   end
